@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import api from '../services/api';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function AdminAssignmentForm({
   isOpen,
@@ -28,7 +28,6 @@ export default function AdminAssignmentForm({
 
       if (initialAssignment.due_date) {
         const d = new Date(initialAssignment.due_date);
-        // Format to YYYY-MM-DDTHH:MM for datetime-local input
         const pad = (n) => String(n).padStart(2, '0');
         const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         setDueDate(formatted);
@@ -50,10 +49,8 @@ export default function AdminAssignmentForm({
         setSelectedGroupIds([]);
       }
     } else {
-      // Default new assignment state
       setTitle('');
       setDescription('');
-      // Default due date: 7 days from now at 23:59
       const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       d.setHours(23, 59, 0, 0);
       const pad = (n) => String(n).padStart(2, '0');
@@ -114,11 +111,11 @@ export default function AdminAssignmentForm({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Edit Assignment' : 'Create New Assignment'}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
             <span>{errorMsg}</span>
           </div>
@@ -134,7 +131,7 @@ export default function AdminAssignmentForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. DBMS Query Optimization Lab"
-            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl shadow-xs text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
           />
         </div>
 
@@ -147,12 +144,12 @@ export default function AdminAssignmentForm({
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Instructions, guidelines, and external submission requirements..."
-            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl shadow-xs text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+            placeholder="Guidelines, instructions, and external submission requirements..."
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Due Date & Time
@@ -162,7 +159,7 @@ export default function AdminAssignmentForm({
               required
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl shadow-xs text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
             />
           </div>
 
@@ -176,18 +173,18 @@ export default function AdminAssignmentForm({
               value={onedriveLink}
               onChange={(e) => setOnedriveLink(e.target.value)}
               placeholder="https://onedrive.live.com/..."
-              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl shadow-xs text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
             />
           </div>
         </div>
 
         {/* Targeting Controls */}
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-            Assignment Target
+        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-lg space-y-2.5">
+          <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+            Assignment Targeting
           </label>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-5">
             <label className="flex items-center space-x-2 text-xs font-medium text-slate-700 cursor-pointer">
               <input
                 type="radio"
@@ -195,7 +192,7 @@ export default function AdminAssignmentForm({
                 value="ALL_STUDENTS"
                 checked={targetType === 'ALL_STUDENTS'}
                 onChange={() => setTargetType('ALL_STUDENTS')}
-                className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                className="w-3.5 h-3.5 text-slate-900 focus:ring-slate-900"
               />
               <span>All Students</span>
             </label>
@@ -207,7 +204,7 @@ export default function AdminAssignmentForm({
                 value="GROUP"
                 checked={targetType === 'GROUP'}
                 onChange={() => setTargetType('GROUP')}
-                className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                className="w-3.5 h-3.5 text-slate-900 focus:ring-slate-900"
               />
               <span>Specific Groups</span>
             </label>
@@ -221,17 +218,17 @@ export default function AdminAssignmentForm({
               {availableGroups.length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No groups exist in the system yet.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
                   {availableGroups.map((g) => (
                     <label
                       key={g.id}
-                      className="flex items-center space-x-2 p-2 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 cursor-pointer hover:bg-slate-50"
+                      className="flex items-center space-x-2 p-2 rounded-md bg-white border border-slate-200 text-xs text-slate-700 cursor-pointer hover:bg-slate-50 transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={selectedGroupIds.includes(g.id)}
                         onChange={() => handleGroupCheckbox(g.id)}
-                        className="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5"
+                        className="rounded text-slate-900 focus:ring-slate-900 w-3.5 h-3.5"
                       />
                       <span className="font-medium truncate">{g.name}</span>
                     </label>
@@ -242,18 +239,18 @@ export default function AdminAssignmentForm({
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+        <div className="flex justify-end space-x-2.5 pt-3 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors btn-press"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-all disabled:opacity-50"
+            className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors btn-press disabled:opacity-50"
           >
             {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Assignment'}
           </button>
@@ -262,3 +259,4 @@ export default function AdminAssignmentForm({
     </Modal>
   );
 }
+

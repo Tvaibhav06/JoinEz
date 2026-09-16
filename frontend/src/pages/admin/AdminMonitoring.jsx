@@ -5,13 +5,11 @@ import ProgressBar from '../../components/ProgressBar';
 import Badge from '../../components/Badge';
 import EmptyState from '../../components/EmptyState';
 import {
-  Eye,
   Users,
   User,
   CheckCircle2,
   Clock,
   Search,
-  Calendar,
   AlertCircle
 } from 'lucide-react';
 
@@ -89,24 +87,24 @@ export default function AdminMonitoring() {
   return (
     <div className="space-y-6">
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Submission Monitoring
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Real-time professor tracking of student assignment confirmations.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time inspection of team and individual student submission confirmations.
           </p>
         </div>
 
         {/* Assignment Dropdown & View Mode Switcher */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Assignment Selector */}
-          <div className="w-full sm:w-64">
+          <div className="w-full sm:w-60">
             <select
               value={selectedAssignmentId}
               onChange={(e) => handleAssignmentChange(e.target.value)}
-              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl bg-white shadow-xs text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white shadow-xs text-xs font-semibold text-slate-800 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             >
               {assignments.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -117,12 +115,12 @@ export default function AdminMonitoring() {
           </div>
 
           {/* Group-wise vs Student-wise Tabs */}
-          <div className="flex items-center space-x-1 bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
+          <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold border border-slate-200/70">
             <button
               onClick={() => setActiveTab('group')}
-              className={`flex items-center px-3 py-1.5 rounded-lg transition-colors ${
+              className={`flex items-center px-3 py-1 rounded-md transition-colors btn-press ${
                 activeTab === 'group'
-                  ? 'bg-white text-brand-700 shadow-xs'
+                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -131,9 +129,9 @@ export default function AdminMonitoring() {
             </button>
             <button
               onClick={() => setActiveTab('student')}
-              className={`flex items-center px-3 py-1.5 rounded-lg transition-colors ${
+              className={`flex items-center px-3 py-1 rounded-md transition-colors btn-press ${
                 activeTab === 'student'
-                  ? 'bg-white text-brand-700 shadow-xs'
+                  ? 'bg-white text-slate-900 shadow-xs border border-slate-200/60'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -145,16 +143,16 @@ export default function AdminMonitoring() {
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+        <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="space-y-6 animate-pulse">
-          <div className="h-44 bg-slate-200 rounded-2xl w-full" />
-          <div className="h-44 bg-slate-200 rounded-2xl w-full" />
+        <div className="space-y-4 animate-pulse">
+          <div className="h-36 bg-slate-200 rounded-xl w-full" />
+          <div className="h-36 bg-slate-200 rounded-xl w-full" />
         </div>
       ) : activeTab === 'group' ? (
         /* GROUP-WISE MONITORING VIEW */
@@ -163,19 +161,19 @@ export default function AdminMonitoring() {
             <EmptyState
               icon={Users}
               title="No groups targeted"
-              description="This assignment has no active groups associated with it."
+              description="This assignment has no active teams associated with it."
             />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {groupMonitoring.groups.map((group) => (
                 <div
                   key={group.group_id}
-                  className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6"
+                  className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-3 border-b border-slate-100">
                     <div>
-                      <div className="flex items-center space-x-2.5">
-                        <h3 className="text-base font-bold text-slate-900">{group.group_name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-sm font-bold text-slate-900">{group.group_name}</h3>
                         {group.is_complete ? (
                           <Badge variant="complete" size="sm">
                             <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
@@ -187,18 +185,18 @@ export default function AdminMonitoring() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
                         {group.total_members} total members • {group.confirmed_members} confirmed • {group.pending_members} pending
                       </p>
                     </div>
 
-                    <div className="w-full sm:w-64">
+                    <div className="w-full sm:w-56">
                       <ProgressBar
                         value={group.progress_percentage}
                         confirmed={group.confirmed_members}
                         total={group.total_members}
                         showLabel={false}
-                        size="md"
+                        size="sm"
                       />
                     </div>
                   </div>
@@ -207,16 +205,16 @@ export default function AdminMonitoring() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider">
-                          <th className="pb-2.5 pl-2">Student Name</th>
-                          <th className="pb-2.5">Email</th>
-                          <th className="pb-2.5">Status</th>
-                          <th className="pb-2.5 pr-2">Confirmation Date</th>
+                        <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                          <th className="pb-2 pl-2">Student Name</th>
+                          <th className="pb-2">Email</th>
+                          <th className="pb-2">Status</th>
+                          <th className="pb-2 pr-2">Confirmation Date</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {group.members.map((member) => (
-                          <tr key={member.id} className="hover:bg-slate-50/50">
+                          <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
                             <td className="py-2.5 pl-2 font-medium text-slate-800">
                               {member.name}
                             </td>
@@ -225,18 +223,18 @@ export default function AdminMonitoring() {
                             </td>
                             <td className="py-2.5">
                               {member.status === 'confirmed' ? (
-                                <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
                                   <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
                                   Confirmed
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center text-[10px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                <span className="inline-flex items-center text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
                                   <Clock className="w-3 h-3 mr-1 text-amber-600" />
                                   Pending
                                 </span>
                               )}
                             </td>
-                            <td className="py-2.5 pr-2 text-slate-500">
+                            <td className="py-2.5 pr-2 text-slate-500 tabular-nums">
                               {member.confirmed_at
                                 ? new Date(member.confirmed_at).toLocaleString(undefined, {
                                     month: 'short',
@@ -258,16 +256,16 @@ export default function AdminMonitoring() {
         </div>
       ) : (
         /* STUDENT-WISE MONITORING VIEW */
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 space-y-4">
           {/* Search Box */}
           <div className="relative max-w-sm">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
-              placeholder="Search by student name, email, group..."
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              placeholder="Search student, email, or team..."
+              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             />
           </div>
 
@@ -281,26 +279,26 @@ export default function AdminMonitoring() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-                    <th className="py-3 pl-4">Student</th>
-                    <th className="py-3 px-4">Group</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 pr-4">Confirmation Time</th>
+                  <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-2.5 pl-4">Student</th>
+                    <th className="py-2.5 px-3">Team</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 pr-4">Confirmation Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredStudents.map((s) => (
-                    <tr key={s.student_id} className="hover:bg-slate-50/50">
-                      <td className="py-3 pl-4">
+                    <tr key={s.student_id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-2.5 pl-4">
                         <span className="font-semibold text-slate-800">{s.student_name}</span>
                         <span className="text-[11px] text-slate-400 block font-mono">
                           {s.student_email}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 font-medium">
+                      <td className="py-2.5 px-3 text-slate-600 font-medium">
                         {s.group_name}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2.5 px-3">
                         {s.status === 'confirmed' ? (
                           <Badge variant="confirmed" size="sm">
                             <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
@@ -313,7 +311,7 @@ export default function AdminMonitoring() {
                           </Badge>
                         )}
                       </td>
-                      <td className="py-3 pr-4 text-slate-500">
+                      <td className="py-2.5 pr-4 text-slate-500 tabular-nums">
                         {s.confirmed_at
                           ? new Date(s.confirmed_at).toLocaleString(undefined, {
                               month: 'short',
@@ -334,3 +332,4 @@ export default function AdminMonitoring() {
     </div>
   );
 }
+

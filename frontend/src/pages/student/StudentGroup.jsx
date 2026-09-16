@@ -11,11 +11,11 @@ import {
   Crown,
   Calendar,
   Mail,
-  Hash,
   AlertCircle,
   CheckCircle2,
   PlusCircle,
-  FileCheck
+  FileCheck,
+  Clock
 } from 'lucide-react';
 
 export default function StudentGroup() {
@@ -103,8 +103,8 @@ export default function StudentGroup() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-40 bg-slate-200 rounded-2xl w-full" />
-        <div className="h-64 bg-slate-200 rounded-2xl w-full" />
+        <div className="h-32 bg-slate-200 rounded-xl w-full" />
+        <div className="h-56 bg-slate-200 rounded-xl w-full" />
       </div>
     );
   }
@@ -112,26 +112,26 @@ export default function StudentGroup() {
   // If student has no group, show Group Creation view
   if (!group) {
     return (
-      <div className="max-w-2xl mx-auto py-8">
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <Users className="w-8 h-8" />
+      <div className="max-w-xl mx-auto py-10">
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-7 text-center">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto mb-3.5">
+            <Users className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
-            Form Your Assignment Team
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1.5">
+            Form Your Course Team
           </h2>
-          <p className="text-sm text-slate-600 max-w-md mx-auto mb-6">
-            You are not part of a group yet. Each student may belong to one active group at a time. Create your group below and invite members.
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
+            You are not part of a team yet. Each student belongs to one active group. Create your group below to start adding teammates.
           </p>
 
           {errorMsg && (
-            <div className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-center space-x-2">
+            <div className="mb-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-center space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleCreateGroup} className="max-w-md mx-auto space-y-4">
+          <form onSubmit={handleCreateGroup} className="max-w-sm mx-auto space-y-3.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 text-left mb-1">
                 Group Name
@@ -142,15 +142,15 @@ export default function StudentGroup() {
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="e.g. Team Alpha, Code Crafters..."
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl shadow-xs focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
               />
             </div>
             <button
               type="submit"
               disabled={creatingGroup}
-              className="w-full inline-flex items-center justify-center py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center py-2 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors btn-press disabled:opacity-50"
             >
-              {creatingGroup ? 'Creating...' : 'Create Group & Become Creator'}
+              {creatingGroup ? 'Creating Team...' : 'Create Team & Become Creator'}
             </button>
           </form>
         </div>
@@ -159,27 +159,27 @@ export default function StudentGroup() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Group Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Active Group
+          <div className="flex items-center space-x-2 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              Active Team
             </span>
             <Badge variant="student" size="sm">
               {group.members.length} Members
             </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             {group.name}
           </h1>
-          <p className="text-xs text-slate-500 mt-1 flex items-center space-x-3">
-            <span>Created by <strong>{group.creator_name}</strong></span>
+          <p className="text-xs text-slate-500 mt-1 flex items-center space-x-2.5">
+            <span>Lead: <strong>{group.creator_name}</strong></span>
             <span>•</span>
-            <span className="flex items-center">
-              <Calendar className="w-3.5 h-3.5 mr-1 text-slate-400" />
-              {new Date(group.created_at).toLocaleDateString(undefined, {
+            <span className="flex items-center tabular-nums">
+              <Calendar className="w-3 h-3 mr-1 text-slate-400" />
+              Created {new Date(group.created_at).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
@@ -197,30 +197,29 @@ export default function StudentGroup() {
             setEmailOrId('');
             setIsAddModalOpen(true);
           }}
-          className="inline-flex items-center px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+          className="inline-flex items-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors btn-press"
         >
-          <UserPlus className="w-4 h-4 mr-1.5" />
-          Add Member
+          <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+          Add Teammate
         </button>
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+        <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Group Members List */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <Users className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Team Roster</h2>
-              <p className="text-xs text-slate-500">All registered students in this group</p>
+              <h2 className="text-xs font-bold text-slate-900">Team Roster</h2>
             </div>
           </div>
         </div>
@@ -228,54 +227,52 @@ export default function StudentGroup() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider">
-                <th className="pb-3 pl-2">Student</th>
-                <th className="pb-3">Student ID</th>
-                <th className="pb-3">Email Address</th>
-                <th className="pb-3">Role</th>
-                <th className="pb-3 pr-2">Joined Date</th>
+              <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="pb-2.5 pl-2">Student</th>
+                <th className="pb-2.5">Student ID</th>
+                <th className="pb-2.5">Email</th>
+                <th className="pb-2.5">Role</th>
+                <th className="pb-2.5 pr-2">Joined</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {group.members.map((member) => (
-                <tr key={member.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3.5 pl-2">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs">
+                <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3 pl-2">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px]">
                         {member.name.charAt(0)}
                       </div>
-                      <div>
-                        <span className="font-semibold text-slate-800">{member.name}</span>
-                        {member.id === user?.id && (
-                          <span className="ml-1.5 text-[10px] text-brand-600 font-bold bg-brand-50 px-1.5 py-0.5 rounded">
-                            You
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-semibold text-slate-800">{member.name}</span>
+                      {member.id === user?.id && (
+                        <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200/60">
+                          You
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="py-3.5 text-slate-600 font-mono">
+                  <td className="py-3 text-slate-500 font-mono text-[11px] tabular-nums">
                     #{member.id}
                   </td>
-                  <td className="py-3.5 text-slate-600">
+                  <td className="py-3 text-slate-600">
                     <div className="flex items-center space-x-1.5">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{member.email}</span>
+                      <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="font-mono text-[11px]">{member.email}</span>
                     </div>
                   </td>
-                  <td className="py-3.5">
+                  <td className="py-3">
                     {member.is_creator ? (
-                      <span className="inline-flex items-center text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                      <span className="inline-flex items-center text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/70">
                         <Crown className="w-3 h-3 mr-1 text-amber-600" />
                         Creator
                       </span>
                     ) : (
-                      <span className="inline-flex items-center text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
                         Member
                       </span>
                     )}
                   </td>
-                  <td className="py-3.5 pr-2 text-slate-500">
+                  <td className="py-3 pr-2 text-slate-500 tabular-nums">
                     {new Date(member.joined_at).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -290,15 +287,14 @@ export default function StudentGroup() {
       </div>
 
       {/* Group Progress Across Assignments Breakdown */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <FileCheck className="w-4 h-4" />
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <FileCheck className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Assignment Progress Breakdown</h2>
-              <p className="text-xs text-slate-500">Live submission progress calculated from member confirmations</p>
+              <h2 className="text-xs font-bold text-slate-900">Assignment Progress Breakdown</h2>
             </div>
           </div>
         </div>
@@ -306,20 +302,20 @@ export default function StudentGroup() {
         {progressList.length === 0 ? (
           <EmptyState
             icon={FileCheck}
-            title="No assignments to track"
-            description="There are currently no assignments targeted to this group."
+            title="No coursework assigned"
+            description="There are currently no assignments targeted to this team."
           />
         ) : (
           <div className="space-y-4">
             {progressList.map((item) => (
               <div
                 key={item.assignment.id}
-                className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50"
+                className="p-4 rounded-lg border border-slate-200/80 bg-slate-50/40"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800">{item.assignment.title}</h4>
-                    <p className="text-xs text-slate-500">
+                    <h4 className="text-xs font-bold text-slate-900">{item.assignment.title}</h4>
+                    <p className="text-[11px] text-slate-500 tabular-nums">
                       Due: {new Date(item.assignment.due_date).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
@@ -331,7 +327,7 @@ export default function StudentGroup() {
                     {item.is_complete ? (
                       <Badge variant="complete" size="sm">
                         <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
-                        Group Complete (100%)
+                        Team Complete (100%)
                       </Badge>
                     ) : (
                       <Badge variant="pending" size="sm">
@@ -346,24 +342,27 @@ export default function StudentGroup() {
                   confirmed={item.confirmed_members}
                   total={item.total_members}
                   label="Team Confirmations"
-                  size="md"
+                  size="sm"
                 />
 
                 {/* Member checklist */}
-                <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                   {item.member_statuses.map((m) => (
                     <div
                       key={m.id}
-                      className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white border border-slate-200"
+                      className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white border border-slate-200/80 text-xs"
                     >
                       <span className="font-medium text-slate-700 truncate">{m.name}</span>
                       {m.status === 'confirmed' ? (
-                        <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 flex items-center shrink-0">
+                          <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
                           Done
                         </span>
                       ) : (
-                        <span className="text-[10px] font-medium text-amber-600">Pending</span>
+                        <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 flex items-center shrink-0">
+                          <Clock className="w-3 h-3 mr-1 text-amber-600" />
+                          Pending
+                        </span>
                       )}
                     </div>
                   ))}
@@ -378,22 +377,22 @@ export default function StudentGroup() {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Add Member to Group"
+        title="Add Teammate to Group"
       >
         <form onSubmit={handleAddMember} className="space-y-4">
-          <p className="text-xs text-slate-500">
-            Enter a registered student's email address or numeric Student ID. Per system rules, students can belong to only one group at a time.
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Enter a registered student's email address or numeric Student ID. Per course rules, each student may belong to only one active team at a time.
           </p>
 
           {addErrorMsg && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{addErrorMsg}</span>
             </div>
           )}
 
           {addSuccessMsg && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center space-x-2">
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
               <span>{addSuccessMsg}</span>
             </div>
@@ -409,24 +408,24 @@ export default function StudentGroup() {
               value={emailOrId}
               onChange={(e) => setEmailOrId(e.target.value)}
               placeholder="e.g. student3@demo.com or 3"
-              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl shadow-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+          <div className="flex justify-end space-x-2.5 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors btn-press"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={addingMember}
-              className="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-all disabled:opacity-50"
+              className="inline-flex items-center px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors btn-press disabled:opacity-50"
             >
-              {addingMember ? 'Adding...' : 'Add Student to Group'}
+              {addingMember ? 'Adding...' : 'Add Student'}
             </button>
           </div>
         </form>
@@ -434,3 +433,4 @@ export default function StudentGroup() {
     </div>
   );
 }
+

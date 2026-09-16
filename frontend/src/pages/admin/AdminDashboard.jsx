@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import ProgressBar from '../../components/ProgressBar';
-import Badge from '../../components/Badge';
 import {
   Users,
   FileText,
@@ -43,199 +41,206 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-32 bg-slate-200 rounded-2xl w-full" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="h-28 bg-slate-200 rounded-2xl" />
-          <div className="h-28 bg-slate-200 rounded-2xl" />
-          <div className="h-28 bg-slate-200 rounded-2xl" />
-          <div className="h-28 bg-slate-200 rounded-2xl" />
+        <div className="h-28 bg-slate-200 rounded-xl w-full" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="h-24 bg-slate-200 rounded-xl" />
+          <div className="h-24 bg-slate-200 rounded-xl" />
+          <div className="h-24 bg-slate-200 rounded-xl" />
+          <div className="h-24 bg-slate-200 rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-purple-800 via-indigo-700 to-brand-700 rounded-2xl p-6 sm:p-8 text-white shadow-lg shadow-purple-900/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6">
+      {/* Executive Workspace Header */}
+      <div className="bg-white rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-xs mb-2">
-            <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-            Professor Portal
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <div className="flex items-center space-x-2 mb-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/70">
+              <ShieldCheck className="w-3 h-3 mr-1 inline-block" />
+              Faculty Portal
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             Welcome, {user?.name}
           </h1>
-          <p className="text-purple-100 text-sm mt-1 max-w-xl">
-            Monitor student groups, post coursework with external OneDrive folders, and inspect real-time completion analytics.
+          <p className="text-slate-500 text-xs mt-0.5 max-w-xl">
+            Monitor course assignments, configure external OneDrive submission folders, and inspect real-time team completion data.
           </p>
         </div>
-        <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center space-x-2.5 shrink-0">
           <Link
             to="/admin/assignments"
-            className="inline-flex items-center px-4 py-2.5 bg-white text-purple-800 hover:bg-purple-50 rounded-xl font-semibold text-xs shadow-md transition-all"
+            className="inline-flex items-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-xs transition-colors btn-press shadow-xs"
           >
-            <PlusCircle className="w-4 h-4 mr-1.5" />
+            <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
             Post New Assignment
           </Link>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+        <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Registered Students</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{summary?.total_students || 0}</h3>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Registered Students</p>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1 tabular-nums font-mono">
+              {summary?.total_students || 0}
+            </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Teams</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{summary?.total_groups || 0}</h3>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Active Teams</p>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1 tabular-nums font-mono">
+              {summary?.total_groups || 0}
+            </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Assignments Posted</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{summary?.total_assignments || 0}</h3>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Assignments Posted</p>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1 tabular-nums font-mono">
+              {summary?.total_assignments || 0}
+            </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-            <FileText className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+            <FileText className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Overall Completion</p>
-            <h3 className="text-2xl font-extrabold text-emerald-600 mt-1">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Overall Completion</p>
+            <h3 className="text-2xl font-extrabold text-emerald-600 mt-1 tabular-nums font-mono">
               {summary?.overall_completion_percentage || 0}%
             </h3>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Navigation Quick Access Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <Link
           to="/admin/assignments"
-          className="group bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:border-brand-500 hover:shadow-md transition-all flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 card-hover flex flex-col justify-between"
         >
           <div>
-            <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <FileText className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center mb-3">
+              <FileText className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Manage Assignments</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Create and edit coursework, specify OneDrive links, and target specific student groups.
+            <h3 className="text-sm font-bold text-slate-900">Manage Coursework</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Create and edit coursework, configure external OneDrive folders, and target specific student groups.
             </p>
           </div>
-          <div className="pt-4 flex items-center text-xs font-semibold text-brand-600 group-hover:text-brand-700">
-            <span>View all assignments</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          <div className="pt-3.5 flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            <span>View assignments</span>
+            <ArrowRight className="w-3 h-3 ml-1" />
           </div>
         </Link>
 
         <Link
           to="/admin/monitoring"
-          className="group bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-500 hover:shadow-md transition-all flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 card-hover flex flex-col justify-between"
         >
           <div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Eye className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center mb-3">
+              <Eye className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Live Monitoring</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Track submission confirmations group-wise and student-wise in real time.
+            <h3 className="text-sm font-bold text-slate-900">Live Submission Tracking</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Track submission confirmations group-wise and student-wise with live status indicators.
             </p>
           </div>
-          <div className="pt-4 flex items-center text-xs font-semibold text-indigo-600 group-hover:text-indigo-700">
-            <span>Inspect submission statuses</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          <div className="pt-3.5 flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            <span>Inspect submissions</span>
+            <ArrowRight className="w-3 h-3 ml-1" />
           </div>
         </Link>
 
         <Link
           to="/admin/analytics"
-          className="group bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:border-purple-500 hover:shadow-md transition-all flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs hover:border-slate-300 card-hover flex flex-col justify-between"
         >
           <div>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center mb-3">
+              <BarChart3 className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Analytics & Performance</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Review completion figures and comparative group performance across coursework.
+            <h3 className="text-sm font-bold text-slate-900">Completion Analytics</h3>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Review completion rates, expected vs confirmed figures, and group-by-group performance rankings.
             </p>
           </div>
-          <div className="pt-4 flex items-center text-xs font-semibold text-purple-600 group-hover:text-purple-700">
-            <span>Open analytics dashboard</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          <div className="pt-3.5 flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            <span>Open analytics</span>
+            <ArrowRight className="w-3 h-3 ml-1" />
           </div>
         </Link>
       </div>
 
       {/* Recent Submissions Feed */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <Clock className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Recent Student Confirmations</h2>
-              <p className="text-xs text-slate-500">Live submission confirmations received</p>
+              <h2 className="text-xs font-bold text-slate-900">Recent Student Confirmations</h2>
             </div>
           </div>
           <Link
             to="/admin/monitoring"
-            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
           >
             View all
           </Link>
         </div>
 
         {(!summary?.recent_submissions || summary.recent_submissions.length === 0) ? (
-          <p className="text-xs text-slate-500 py-4 text-center">No submissions recorded yet.</p>
+          <p className="text-xs text-slate-500 py-4 text-center">No confirmations recorded yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider">
-                  <th className="pb-3 pl-2">Student</th>
-                  <th className="pb-3">Group</th>
-                  <th className="pb-3">Assignment</th>
-                  <th className="pb-3 pr-2">Confirmation Time</th>
+                <tr className="border-b border-slate-100 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="pb-2.5 pl-2">Student</th>
+                  <th className="pb-2.5">Team</th>
+                  <th className="pb-2.5">Assignment</th>
+                  <th className="pb-2.5 pr-2">Confirmation Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {summary.recent_submissions.map((sub) => (
-                  <tr key={sub.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 pl-2">
-                      <span className="font-semibold text-slate-800">{sub.student_name}</span>
-                      <span className="text-[11px] text-slate-400 block">{sub.student_email}</span>
+                  <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-2.5 pl-2">
+                      <span className="font-semibold text-slate-800 block">{sub.student_name}</span>
+                      <span className="text-[11px] text-slate-400 font-mono">{sub.student_email}</span>
                     </td>
-                    <td className="py-3 text-slate-600">{sub.group_name}</td>
-                    <td className="py-3 text-slate-800 font-medium">{sub.assignment_title}</td>
-                    <td className="py-3 pr-2 text-slate-500">
+                    <td className="py-2.5 text-slate-600 font-medium">{sub.group_name}</td>
+                    <td className="py-2.5 text-slate-800 font-medium">{sub.assignment_title}</td>
+                    <td className="py-2.5 pr-2 text-slate-500 tabular-nums">
                       {new Date(sub.confirmed_at).toLocaleString(undefined, {
                         month: 'short',
                         day: 'numeric',
@@ -253,3 +258,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
