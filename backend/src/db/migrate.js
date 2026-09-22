@@ -4,15 +4,21 @@ const { pool } = require('../config/db');
 
 async function runMigrations() {
   console.log('🔄 Running database migrations...');
-  const migrationPath = path.join(__dirname, 'migrations', '001_init_schema.sql');
-  const sql = fs.readFileSync(migrationPath, 'utf-8');
+  const migrationsDir = path.join(__dirname, 'migrations');
+  const files = fs.readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    await client.query(sql);
-    await client.query('COMMIT');
-    console.log('✅ Database schema migrated successfully.');
+    for (const file of files) {
+      console.log(`  -> Executing migration: ${file}`);
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+      await client.query('BEGIN');
+      await client.query(sql);
+      await client.query('COMMIT');
+    }
+    console.log('✅ All database schema migrations executed successfully.');
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Migration failed:', err);

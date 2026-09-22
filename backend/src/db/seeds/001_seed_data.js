@@ -2,20 +2,31 @@ const bcrypt = require('bcryptjs');
 const { pool } = require('../../config/db');
 
 async function seedData() {
-  console.log('🌱 Seeding database demo data...');
+  console.log('🌱 Seeding Joineazy Round 2 demo data...');
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
     // Clean existing data in reverse dependency order
-    await client.query('TRUNCATE submission_confirmations, assignment_targets, assignments, group_members, groups, users RESTART IDENTITY CASCADE');
+    await client.query(`
+      TRUNCATE
+        submission_confirmations,
+        assignment_targets,
+        assignments,
+        course_enrollments,
+        courses,
+        group_members,
+        groups,
+        users
+      RESTART IDENTITY CASCADE
+    `);
 
     // 1. Password hashes
     const adminPasswordHash = await bcrypt.hash('Admin@123', 10);
     const studentPasswordHash = await bcrypt.hash('Student@123', 10);
 
-    // 2. Insert Admin
+    // 2. Insert Professor / Admin
     const adminRes = await client.query(`
       INSERT INTO users (name, email, password_hash, role)
       VALUES ($1, $2, $3, $4)
@@ -43,24 +54,76 @@ async function seedData() {
     }
     const [s1, s2, s3, s4, s5] = studentIds;
 
-    // 4. Insert Groups
-    // Team Alpha created by student1
+    // 4. Insert Courses
+    const coursesData = [
+      {
+        title: 'CS301: Modern Web Development',
+        description: 'Full-stack web application engineering, REST architecture, state management, and responsive interface design.'
+      },
+      {
+        title: 'CS302: Database Systems & Modeling',
+        description: 'Relational algebra, normalized schema design, transaction atomicity, query performance, and indexing strategies.'
+      },
+      {
+        title: 'CS303: Computer Networks & Distributed Systems',
+        description: 'Network protocols, socket programming, distributed mutual exclusion, and concurrent server architecture.'
+      }
+    ];
+
+    const courseIds = [];
+    for (const course of coursesData) {
+      const cRes = await client.query(`
+        INSERT INTO courses (title, description, professor_id)
+        VALUES ($1, $2, $3)
+        RETURNING id
+      `, [course.title, course.description, adminId]);
+      courseIds.push(cRes.rows[0].id);
+    }
+    const [courseWebDev, courseDbms, courseNetworks] = courseIds;
+
+    // 5. Insert Course Enrollments
+    // CS301 (Web Dev) - All 5 students enrolled
+    for (const sid of [s1, s2, s3, s4, s5]) {
+      await client.query(`
+        INSERT INTO course_enrollments (course_id, student_id)
+        VALUES ($1, $2)
+      `, [courseWebDev, sid]);
+    }
+
+    // CS302 (Database Systems) - s1, s2, s3 enrolled
+    for (const sid of [s1, s2, s3]) {
+      await client.query(`
+        INSERT INTO course_enrollments (course_id, student_id)
+        VALUES ($1, $2)
+      `, [courseDbms, sid]);
+    }
+
+    // CS303 (Computer Networks) - s4, s5 enrolled
+    for (const sid of [s4, s5]) {
+      await client.query(`
+        INSERT INTO course_enrollments (course_id, student_id)
+        VALUES ($1, $2)
+      `, [courseNetworks, sid]);
+    }
+
+    // 6. Insert Groups with explicit Leaders
+    // Team Alpha: created by s1, leader is s1
     const groupAlphaRes = await client.query(`
-      INSERT INTO groups (name, created_by)
-      VALUES ($1, $2)
+      INSERT INTO groups (name, created_by, leader_id)
+      VALUES ($1, $2, $2)
       RETURNING id
     `, ['Team Alpha', s1]);
     const alphaId = groupAlphaRes.rows[0].id;
 
-    // Team Beta created by student4
+    // Team Beta: created by s4, leader is s4
     const groupBetaRes = await client.query(`
-      INSERT INTO groups (name, created_by)
-      VALUES ($1, $2)
+      INSERT INTO groups (name, created_by, leader_id)
+      VALUES ($1, $2, $2)
       RETURNING id
     `, ['Team Beta', s4]);
     const betaId = groupBetaRes.rows[0].id;
 
-    // 5. Insert Group Members
+    // 7. Insert Group Members
     // Team Alpha: s1, s2, s3
     await client.query(`
       INSERT INTO group_members (group_id, student_id) VALUES
@@ -76,109 +139,127 @@ async function seedData() {
       ($1, $3)
     `, [betaId, s4, s5]);
 
-    // 6. Insert Assignments
-    // Assignment 1: DBMS (All students)
+    // 8. Insert Assignments across Courses & Submission Types
+    // Assignment 1: DBMS Relational Algebra (Course: CS302, Individual, Target: ALL_STUDENTS)
     const dueDate1 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const assign1Res = await client.query(`
-      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by, course_id, submission_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `, [
       'DBMS Relational Algebra & SQL Case Study',
-      'Analyze normalized relational schemas, construct optimized SQL join queries with explain plans, and submit your technical report to the OneDrive folder.',
+      'Analyze normalized schemas, construct optimized SQL join queries with explain plans, and submit your technical report to OneDrive.',
       dueDate1,
       'https://onedrive.live.com/demo/joineazy-dbms-assignment',
-      adminId
+      adminId,
+      courseDbms,
+      'INDIVIDUAL'
     ]);
     const assign1Id = assign1Res.rows[0].id;
 
-    // Target Assignment 1 to ALL_STUDENTS
     await client.query(`
       INSERT INTO assignment_targets (assignment_id, target_type, group_id)
       VALUES ($1, 'ALL_STUDENTS', NULL)
     `, [assign1Id]);
 
-    // Assignment 2: OS (Team Alpha only)
+    // Assignment 2: Full-Stack Portal (Course: CS301, Group, Target: Team Alpha)
     const dueDate2 = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
     const assign2Res = await client.query(`
-      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by, course_id, submission_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `, [
-      'Operating Systems Distributed File Systems',
-      'Implement distributed mutual exclusion and consistent file system cache replication. Upload your source archive and test benchmarks externally to OneDrive.',
+      'Full-Stack Portal with JWT Authentication',
+      'Build and deploy a collaborative React portal with JWT session management, RBAC, and containerized Docker setup. Group leader must submit final package.',
       dueDate2,
-      'https://onedrive.live.com/demo/joineazy-os-assignment',
-      adminId
+      'https://onedrive.live.com/demo/joineazy-webdev-assignment',
+      adminId,
+      courseWebDev,
+      'GROUP'
     ]);
     const assign2Id = assign2Res.rows[0].id;
 
-    // Target Assignment 2 to Team Alpha
     await client.query(`
       INSERT INTO assignment_targets (assignment_id, target_type, group_id)
       VALUES ($1, 'GROUP', $2)
     `, [assign2Id, alphaId]);
 
-    // Assignment 3: Networks (Team Beta only)
+    // Assignment 3: Distributed TCP Sockets (Course: CS303, Group, Target: Team Beta)
     const dueDate3 = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const assign3Res = await client.query(`
-      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by, course_id, submission_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `, [
-      'Computer Networks Socket Architecture',
-      'Develop a multi-threaded non-blocking TCP chat service with protocol framing. Export packet capture files and upload to the OneDrive link.',
+      'Distributed TCP Socket Architecture',
+      'Implement multi-threaded non-blocking TCP socket server with custom packet serialization. Group leader submits final archive to OneDrive.',
       dueDate3,
       'https://onedrive.live.com/demo/joineazy-networks-assignment',
-      adminId
+      adminId,
+      courseNetworks,
+      'GROUP'
     ]);
     const assign3Id = assign3Res.rows[0].id;
 
-    // Target Assignment 3 to Team Beta
     await client.query(`
       INSERT INTO assignment_targets (assignment_id, target_type, group_id)
       VALUES ($1, 'GROUP', $2)
     `, [assign3Id, betaId]);
 
-    // 7. Insert Submission Confirmations
-    // For Assignment 1 (DBMS):
-    // Team Alpha: s1 confirmed, s2 confirmed, s3 pending
+    // Assignment 4: REST API Performance (Course: CS301, Individual, Target: ALL_STUDENTS)
+    const dueDate4 = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000);
+    const assign4Res = await client.query(`
+      INSERT INTO assignments (title, description, due_date, onedrive_link, created_by, course_id, submission_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
+    `, [
+      'REST API Performance & Caching Benchmarks',
+      'Conduct load testing on API endpoints using autocannon, configure reverse-proxy caching, and record findings in OneDrive.',
+      dueDate4,
+      'https://onedrive.live.com/demo/joineazy-api-benchmarks',
+      adminId,
+      courseWebDev,
+      'INDIVIDUAL'
+    ]);
+    const assign4Id = assign4Res.rows[0].id;
+
     await client.query(`
-      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status)
+      INSERT INTO assignment_targets (assignment_id, target_type, group_id)
+      VALUES ($1, 'ALL_STUDENTS', NULL)
+    `, [assign4Id]);
+
+    // 9. Insert Submission Confirmations
+    // For Assignment 1 (Individual, DBMS):
+    // s1 confirmed, s2 confirmed, s3 pending
+    await client.query(`
+      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status, confirmed_by_leader_id)
       VALUES
-      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '2 hours', CURRENT_TIMESTAMP - INTERVAL '1 hour 50 minutes', 'confirmed'),
-      ($1, $3, CURRENT_TIMESTAMP - INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '55 minutes', 'confirmed')
+      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '2 hours', CURRENT_TIMESTAMP - INTERVAL '1 hour 50 minutes', 'confirmed', NULL),
+      ($1, $3, CURRENT_TIMESTAMP - INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '55 minutes', 'confirmed', NULL)
     `, [assign1Id, s1, s2]);
 
-    // Team Beta: s4 confirmed, s5 pending
+    // For Assignment 2 (Group, Web Dev):
+    // Confirmed by Leader s1 (Aarav) on behalf of Team Alpha! Fan-out to s1, s2, s3
     await client.query(`
-      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status)
+      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status, confirmed_by_leader_id)
       VALUES
-      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '30 minutes', CURRENT_TIMESTAMP - INTERVAL '25 minutes', 'confirmed')
-    `, [assign1Id, s4]);
+      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '2 hours 50 minutes', 'confirmed', $2),
+      ($1, $3, CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '2 hours 50 minutes', 'confirmed', $2),
+      ($1, $4, CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '2 hours 50 minutes', 'confirmed', $2)
+    `, [assign2Id, s1, s2, s3]);
 
-    // For Assignment 2 (OS): Team Alpha: s1 confirmed, s2 pending, s3 pending
-    await client.query(`
-      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status)
-      VALUES
-      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '4 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours 55 minutes', 'confirmed')
-    `, [assign2Id, s1]);
-
-    // For Assignment 3 (Networks): Team Beta: s4 confirmed, s5 confirmed -> 100% Complete!
-    await client.query(`
-      INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status)
-      VALUES
-      ($1, $2, CURRENT_TIMESTAMP - INTERVAL '5 hours', CURRENT_TIMESTAMP - INTERVAL '4 hours 50 minutes', 'confirmed'),
-      ($1, $3, CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '2 hours 40 minutes', 'confirmed')
-    `, [assign3Id, s4, s5]);
+    // Assignment 3 (Group, Networks) has 0 confirmations (pending leader submission from s4)
+    // Assignment 4 (Individual, Web Dev) has 0 confirmations (pending)
 
     await client.query('COMMIT');
-    console.log('✅ Demo seed data successfully populated:');
-    console.log('   - 1 Admin: admin@joineazy.demo / Admin@123');
+    console.log('✅ Round 2 demo seed data successfully populated:');
+    console.log('   - 1 Admin/Professor: admin@joineazy.demo / Admin@123');
     console.log('   - 5 Students: student1@demo.com to student5@demo.com / Student@123');
-    console.log('   - 2 Groups: Team Alpha, Team Beta');
-    console.log('   - 3 Assignments: All-students, Team Alpha specific, Team Beta specific');
-    console.log('   - Mixed confirmed and pending submissions populated.');
+    console.log('   - 3 Courses: CS301 (Web Dev), CS302 (DBMS), CS303 (Networks)');
+    console.log('   - 2 Groups with Leaders: Team Alpha (Leader: s1), Team Beta (Leader: s4)');
+    console.log('   - 4 Assignments across courses with INDIVIDUAL and GROUP submission types');
+    console.log('   - Leader-acknowledged group submission (Team Alpha on Assignment 2)');
+    console.log('   - Mixed individual and pending submission states ready for live demonstration.');
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('❌ Seeding failed:', err);
