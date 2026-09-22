@@ -14,6 +14,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentAssignments from './pages/student/StudentAssignments';
+import CourseAssignments from './pages/student/CourseAssignments';
 import StudentGroup from './pages/student/StudentGroup';
 
 // Admin Pages
@@ -57,6 +58,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['student']} />}>
             <Route element={<StudentLayout />}>
               <Route path="/student" element={<StudentDashboard />} />
+              <Route path="/student/courses/:courseId/assignments" element={<CourseAssignments />} />
               <Route path="/student/assignments" element={<StudentAssignments />} />
               <Route path="/student/group" element={<StudentGroup />} />
             </Route>

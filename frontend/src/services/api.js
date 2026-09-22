@@ -39,6 +39,12 @@ export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body }),
   getMe: () => request('/auth/me', { method: 'GET' }),
 
+  // Courses
+  getMyCourses: () => request('/courses/my-courses', { method: 'GET' }),
+  getTeachingCourses: () => request('/courses/teaching', { method: 'GET' }),
+  getCourseAssignments: (courseId) => request(`/courses/${courseId}/assignments`, { method: 'GET' }),
+  getCourses: () => request('/courses', { method: 'GET' }),
+
   // Groups
   createGroup: (body) => request('/groups', { method: 'POST', body }),
   getMyGroup: () => request('/groups/my-group', { method: 'GET' }),
@@ -59,7 +65,10 @@ export const api = {
 
   // Admin Monitoring & Analytics
   getAdminGroupMonitoring: (assignmentId) => request(`/admin/assignments/${assignmentId}/groups`, { method: 'GET' }),
-  getAdminStudentMonitoring: (assignmentId) => request(`/admin/assignments/${assignmentId}/students`, { method: 'GET' }),
+  getAdminStudentMonitoring: (assignmentId, status) => {
+    const query = status && status.toLowerCase() !== 'all' ? `?status=${status.toUpperCase()}` : '';
+    return request(`/admin/assignments/${assignmentId}/students${query}`, { method: 'GET' });
+  },
   getCompletionAnalytics: (assignmentId) =>
     request(`/admin/analytics/completion${assignmentId ? `?assignment_id=${assignmentId}` : ''}`, { method: 'GET' }),
   getGroupPerformanceAnalytics: () => request('/admin/analytics/group-performance', { method: 'GET' }),

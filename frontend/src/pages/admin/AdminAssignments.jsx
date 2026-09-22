@@ -11,7 +11,10 @@ import {
   ExternalLink,
   Eye,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Users,
+  UserCheck
 } from 'lucide-react';
 
 export default function AdminAssignments() {
@@ -64,7 +67,7 @@ export default function AdminAssignments() {
             Coursework & Assignments
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Create and edit course assignments, specify external OneDrive folders, and target student teams.
+            Create and edit course assignments, specify submission types (Individual/Group), and target student teams.
           </p>
         </div>
 
@@ -95,9 +98,10 @@ export default function AdminAssignments() {
         <EmptyState
           icon={FileText}
           title="No assignments created yet"
-          description="Get started by creating an assignment with title, description, due date, and OneDrive link."
+          description="Get started by creating an assignment with title, description, due date, course, and OneDrive link."
           action={
             <button
+              type="button"
               onClick={handleOpenCreate}
               className="inline-flex items-center px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs btn-press"
             >
@@ -113,9 +117,10 @@ export default function AdminAssignments() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
                   <th className="py-3 pl-5">Assignment</th>
+                  <th className="py-3 px-3">Course</th>
+                  <th className="py-3 px-3">Type</th>
                   <th className="py-3 px-3">Due Date</th>
                   <th className="py-3 px-3">Targeting</th>
-                  <th className="py-3 px-3">OneDrive</th>
                   <th className="py-3 px-3">Confirmations</th>
                   <th className="py-3 pr-5 text-right">Actions</th>
                 </tr>
@@ -131,6 +136,28 @@ export default function AdminAssignments() {
                         {assignment.description}
                       </span>
                     </td>
+
+                    <td className="py-3.5 px-3 whitespace-nowrap">
+                      <span className="inline-flex items-center text-slate-700 font-medium text-xs">
+                        <BookOpen className="w-3 h-3 mr-1 text-slate-400" />
+                        {assignment.course_title || 'General'}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-3 whitespace-nowrap">
+                      {assignment.submission_type === 'GROUP' ? (
+                        <span className="inline-flex items-center text-[10px] font-bold uppercase text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                          <Users className="w-3 h-3 mr-1 text-purple-600" />
+                          Group
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] font-medium uppercase text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                          <UserCheck className="w-3 h-3 mr-1 text-blue-600" />
+                          Individual
+                        </span>
+                      )}
+                    </td>
+
                     <td className="py-3.5 px-3 whitespace-nowrap text-slate-600">
                       <div className="flex items-center space-x-1.5 tabular-nums">
                         <Calendar className="w-3 h-3 text-slate-400" />
@@ -143,6 +170,7 @@ export default function AdminAssignments() {
                         </span>
                       </div>
                     </td>
+
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       <Badge
                         variant={assignment.target_summary === 'All Students' ? 'all_students' : 'group'}
@@ -151,24 +179,16 @@ export default function AdminAssignments() {
                         {assignment.target_summary}
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-3 whitespace-nowrap">
-                      <a
-                        href={assignment.onedrive_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
-                      >
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        OneDrive
-                      </a>
-                    </td>
+
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       <span className="font-semibold text-slate-800 tabular-nums">
                         {assignment.confirmed_count || 0} Confirmed
                       </span>
                     </td>
+
                     <td className="py-3.5 pr-5 whitespace-nowrap text-right space-x-1.5">
                       <button
+                        type="button"
                         onClick={() => handleOpenEdit(assignment)}
                         className="inline-flex items-center px-2 py-1 border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors btn-press text-[11px]"
                         title="Edit Assignment"
@@ -204,4 +224,3 @@ export default function AdminAssignments() {
     </div>
   );
 }
-

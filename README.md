@@ -1,442 +1,425 @@
-# Joineazy Student, Group & Assignment Management System
+# JoinEz — Student, Group, Course & Assignment Management System
+## Round 2 Enhancement (Joineazy Full Stack Internship)
 
-A role-based full-stack web application designed for **Joineazy Task 1**, enabling students to form groups, view professor assignments, access external OneDrive submission links, confirm submissions via a two-step in-app verification flow, and track live team progress, while professors/admins manage assignments, monitor submission progress, and review basic analytics.
+[![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)](https://www.postgresql.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg)](https://tailwindcss.com/)
+[![Tests](https://img.shields.io/badge/Tests-41%20Passed-brightgreen.svg)]()
+
+A robust, role-based academic platform built for **Joineazy Round 2**, extending the Task 1 system with **Course Data Relationships**, **Individual vs Group Assignment Types**, **Group-Leader-Only Acknowledgment**, **Professor Course Dashboard Analytics**, **Server-Side Status Filtering**, **Auth UX Polish**, and **Multi-Platform Cloud Deployment** specifications.
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Features](#features)
-3. [Technology Stack](#technology-stack)
-4. [Architecture Overview](#architecture-overview)
-5. [Project Structure](#project-structure)
-6. [Local Development Setup](#local-development-setup)
-7. [Docker Setup](#docker-setup)
-8. [Environment Variables](#environment-variables)
-9. [Database Schema & ER Diagram](#database-schema--er-diagram)
-10. [API Documentation](#api-documentation)
-11. [Route Security Matrix](#route-security-matrix)
-12. [Implementation Decisions for PRD Ambiguities](#implementation-decisions-for-prd-ambiguities)
-13. [Demo Credentials](#demo-credentials)
-14. [Demo Walkthrough](#demo-walkthrough)
-15. [Automated Testing](#automated-testing)
-16. [Scope & Limitations](#scope--limitations)
+1. [Round 2 Overview & Enhancements](#1-round-2-overview--enhancements)
+2. [UI/UX Design Decisions & Rationale](#2-uiux-design-decisions--rationale)
+3. [Visual UI Showcase & Screenshots](#3-visual-ui-showcase--screenshots)
+4. [System Architecture](#4-system-architecture)
+5. [Database Schema & ER Diagram](#5-database-schema--er-diagram)
+6. [Round 2 Core Workflows](#6-round-2-core-workflows)
+   - [Course Layer & Student Enrollment](#course-layer--student-enrollment)
+   - [Individual vs Group Submission Logic](#individual-vs-group-submission-logic)
+   - [Leader-Only Group Acknowledgment](#leader-only-group-acknowledgment)
+   - [Server-Side Status Filtering](#server-side-status-filtering)
+7. [API Specification](#7-api-specification)
+8. [Demo Credentials](#8-demo-credentials)
+9. [Local Development & Setup](#9-local-development--setup)
+10. [Docker Setup](#10-docker-setup)
+11. [Automated Testing](#11-automated-testing)
+12. [Deployment Guide (Render / Vercel / Netlify)](#12-deployment-guide)
+13. [Verification Report](#13-verification-report)
+14. [Known Limitations](#14-known-limitations)
 
 ---
 
-## 1. Project Overview
+## 1. Round 2 Overview & Enhancements
 
-In university and internship programs, professors post coursework and share an external OneDrive folder where actual files are uploaded. The Joineazy system solves the collaboration and coordination challenge:
-- Students self-organize into collaborative groups.
-- Professors publish assignments targeted to either all students or specific groups.
-- Students open the external OneDrive link, complete the upload, and return to record a **two-step in-app submission confirmation**.
-- Live team progress updates dynamically based on individual member confirmations.
-- Professors track group-wise and student-wise completion and review aggregate analytics on a unified dashboard.
+Building directly on top of Task 1's baseline, Round 2 introduces the following major capabilities:
 
----
-
-## 2. Features
-
-### Student Experience
-- **Authentication**: Public registration and secure JWT login.
-- **Group Management**:
-  - Create a group (creator automatically becomes initial member).
-  - Add members immediately by **Email** or **numeric Student ID**.
-  - Enforces single-group policy (a student may belong to only one active group at a time).
-  - View member list with join dates and roles.
-- **Assignment Access**:
-  - View assignments targeted to all students or specifically to the student's group.
-  - Direct external link to the class OneDrive folder (`target="_blank" rel="noopener noreferrer"`).
-- **Two-Step Submission Confirmation**:
-  - **Step 1**: Initial intent selection ("Yes, I have submitted externally").
-  - **Step 2**: Final confirmation dialog with explicit acknowledgment.
-  - Strictly prevents duplicate confirmations.
-- **Group Progress Tracking**:
-  - Dynamic visual progress bar derived from database records (`confirmed / total * 100`).
-  - "✓ Group Complete" badge displayed upon 100% completion.
-
-### Admin (Professor) Experience
-- **Authentication**: Secure login via seeded professor credentials.
-- **Assignment Management**:
-  - Create assignments with Title, Description, Due Date, and external OneDrive URL.
-  - Flexible targeting: **All Students** or **Specific Groups** (multi-select).
-  - Edit existing assignments while preserving student submission histories.
-- **Submission Monitoring**:
-  - **Group-Wise Monitoring**: Progress percentage, confirmed count, pending count, and member-by-member breakdown table.
-  - **Student-Wise Monitoring**: Filterable roster showing student name, email, group, status badge, and confirmation timestamp.
-- **Analytics & Performance**:
-  - **Completion Analytics**: Total expected submissions, total confirmed, total pending, and overall completion rate.
-  - **Group Performance Analytics**: Ranking table and progress bars using the PRD formula: `(Confirmed / Expected) * 100`.
-- **Dashboard Overview**: Summary KPI cards and recent submissions live feed.
+| Feature Area | Task 1 Baseline | Round 2 Enhancement |
+| :--- | :--- | :--- |
+| **Courses Layer** | No courses concept; flat assignment list. | Dedicated `courses` and `course_enrollments` tables; course-scoped student and professor dashboards. |
+| **Assignment Types** | Implicitly all individual acknowledgments. | Explicit `submission_type` (`INDIVIDUAL` vs `GROUP`) stored per assignment. |
+| **Group Submissions** | Every student had to confirm individually. | **Leader-Only Acknowledgment**: Only designated group leader can confirm; transactionally marks submission for all group members with `confirmed_by_leader_id`. Non-leaders are rejected (403 Forbidden). |
+| **Student Dashboard** | Simple assignment & group overview. | Redesigned with responsive **Enrolled Course Cards** clickable to `/student/courses/:courseId/assignments`. |
+| **Professor Dashboard** | Generic counts. | Dedicated **Courses Taught Dashboard** with live PostgreSQL analytics (enrolled student count, submitted count, pending count, submission rate). |
+| **Monitoring Filters** | Client-side search only. | **Server-Side Status Filtering**: `?status=SUBMITTED` and `?status=PENDING` implemented directly in SQL. |
+| **Authentication UX** | Basic forms. | Real-time inline field validation, loading spinners, role-based redirects, and quick demo logins. |
+| **Database Migrations** | Initial schema only. | Migration runner (`002_round2_courses_and_groups.sql`) with backwards-compatible legacy assignment backfill. |
 
 ---
 
-## 3. Technology Stack
+## 2. UI/UX Design Decisions & Rationale
 
-- **Frontend**:
-  - React.js 18 (Vite)
-  - Tailwind CSS (Curated slate & indigo color tokens, modern typography with Inter)
-  - React Router DOM v6 (Role-based route protection)
-  - Lucide React (Clean, accessible icons)
-- **Backend**:
-  - Node.js & Express.js
-  - PostgreSQL (`pg` connection pool with parameterized SQL queries)
-  - JSON Web Tokens (`jsonwebtoken`)
-  - Password Hashing (`bcryptjs`)
-  - CORS & Dotenv
-- **Testing**:
-  - Jest & Supertest (End-to-end REST API testing)
-- **Containerization**:
-  - Docker & Docker Compose (Multi-stage builds, Nginx production server, PostgreSQL healthchecks)
+1. **Course-Centric Hierarchy (`StudentDashboard.jsx` & `CourseAssignments.jsx`)**:
+   - *Rationale*: Real university portals organize student workflows around enrolled courses. Students view responsive course cards with instructor details and assignment counts, clicking through to course-scoped assignments at `/student/courses/:courseId/assignments`.
+2. **Clear Submission Type Distinction**:
+   - *Rationale*: Individual and Group coursework have fundamentally different responsibilities. We implemented distinctive color tokens:
+     - **Individual**: Blue badge (`UserCheck`), "Acknowledge Submission" button.
+     - **Group**: Purple badge (`Users`), "Submit as Group Leader" button (`Crown`).
+3. **Leader-Only Role Feedback**:
+   - *Rationale*: Non-leader students must not be confused about why they cannot click submit. The UI renders a dedicated notice: *"Only your group leader ([Leader Name]) can confirm this submission on behalf of the group."* If the student is the leader, a golden crown badge and prominent action button are presented.
+4. **Instant Inline Validation on Auth**:
+   - *Rationale*: Instant regex validation for email and length validation for password prevents failed round-trips to the server and provides immediate user confidence.
+5. **Segmented Status Filters in Professor Monitoring**:
+   - *Rationale*: Professors managing large cohorts need fast access to pending students. Server-side buttons (`All`, `Submitted`, `Pending`) make auditing missing submissions instant.
 
 ---
 
-## 4. Architecture Overview
+## 3. Visual UI Showcase & Screenshots
 
-The system implements a strictly separated layered architecture:
+### Student Portal: Enrolled Courses & Team Overview
+Students view their active team membership and an enrolled course catalog with instructor details and live completion indicators:
+![Student Dashboard](docs/screenshots/student_dashboard.png)
+
+### Course Assignments & Group Leader Acknowledgment
+Course-scoped coursework displays distinct badges for **Individual** vs **Group** assignments. Only the designated team leader is authorized to submit for the entire team:
+![Course Assignments](docs/screenshots/course_assignments.png)
+
+### External OneDrive Submission Modal (Step 1 & Step 2)
+The two-step submission protocol provides direct access to external OneDrive coursework folders and gives explicit leader-only confirmation guidance:
+![Submission Modal](docs/screenshots/submission_modal_step1.png)
+
+### Professor Dashboard: Courses Taught & Live Analytics
+Faculty members inspect their taught course rosters with real-time PostgreSQL analytics (student count, submitted/pending count, and submission rates):
+![Professor Dashboard](docs/screenshots/professor_dashboard.png)
+
+### Submission Monitoring with Server-Side Status Filtering
+Professors can filter submissions in real-time by status (`ALL`, `SUBMITTED`, `PENDING`), backed directly by SQL query parameters:
+![Submission Monitoring](docs/screenshots/monitoring_status_filter.png)
+
+### Performance & Completion Analytics
+Global statistics and group performance rankings computed dynamically from PostgreSQL data:
+![Admin Analytics](docs/screenshots/admin_analytics.png)
+
+---
+
+## 4. System Architecture
 
 ```text
-React Client (SPA)
-       │
-       ▼ (HTTP / JSON with Bearer JWT)
-Express REST API
-       │
-  ┌────┴──────────────────────────────┐
-  │ Routes Layer                      │
-  │   ↓                               │
-  │ Middleware (JWT + RBAC + Errors)  │
-  │   ↓                               │
-  │ Controllers                       │
-  │   ↓                               │
-  │ Services (Business Logic)         │
-  │   ↓                               │
-  │ PostgreSQL (Parameterized Queries)│
-  └────┬──────────────────────────────┘
-       │
-       ▼
-PostgreSQL Database (Referential Integrity, Constraints & Indexes)
-```
-
-For comprehensive details on request flows and transaction boundaries, refer to [`docs/architecture.md`](file:///d:/codes/assignmw/docs/architecture.md).
-
----
-
-## 5. Project Structure
-
-```text
-joineazy-task1/
-├── frontend/                     # React + Vite + Tailwind CSS
-│   ├── src/
-│   │   ├── components/           # Navbar, Modal, ProgressBar, Badges, Cards, Tables
-│   │   ├── pages/
-│   │   │   ├── auth/             # LoginPage, RegisterPage
-│   │   │   ├── student/          # StudentDashboard, StudentAssignments, StudentGroup
-│   │   │   └── admin/            # AdminDashboard, AdminAssignments, AdminMonitoring, AdminAnalytics
-│   │   ├── layouts/              # StudentLayout, AdminLayout
-│   │   ├── services/             # Centralized api.js client
-│   │   ├── context/              # AuthContext (JWT, user, role, login, logout)
-│   │   ├── routes/               # ProtectedRoute
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── nginx.conf                # Nginx production configuration
-│   ├── Dockerfile
-│   └── package.json
-│
-├── backend/                      # Node.js + Express REST API
-│   ├── src/
-│   │   ├── config/               # db.js (pg Pool), env.js
-│   │   ├── controllers/          # auth, group, assignment, submission, admin controllers
-│   │   ├── services/             # auth, group, assignment, submission, admin services
-│   │   ├── middleware/           # auth.js, role.js, errorHandler.js
-│   │   ├── routes/               # auth, group, assignment, submission, admin routes
-│   │   ├── db/
-│   │   │   ├── migrations/       # 001_init_schema.sql
-│   │   │   ├── seeds/            # 001_seed_data.js
-│   │   │   └── migrate.js        # Automated migration runner
-│   │   ├── utils/                # jwt.js, password.js, response.js
-│   │   ├── app.js
-│   │   └── server.js
-│   ├── tests/                    # Integration & unit test suites (Jest + Supertest)
-│   ├── Dockerfile
-│   └── package.json
-│
-├── docs/
-│   ├── er-diagram.md             # Detailed Mermaid ER diagram & schema dictionary
-│   └── architecture.md           # Architecture, data flows & security model
-│
-├── docker-compose.yml            # Multi-container orchestration
-├── .env.example                  # Environment configuration template
-├── .gitignore
-└── README.md
+                                +---------------------------+
+                                |    React 18 + Vite SPA    |
+                                | (Tailwind CSS, Lucide UI) |
+                                +-------------+-------------+
+                                              |
+                                     HTTP / REST (JWT)
+                                              |
+                                              v
++-----------------------------------------------------------------------------------------+
+|                               Express.js REST Backend Layer                             |
+|                                                                                         |
+|  [Auth Routes]     [Course Routes]     [Group Routes]     [Assign Routes]    [Admin]     |
+|         |                 |                   |                  |              |       |
+|  [Auth Service]   [Course Service]    [Group Service]    [Assign/Submit]  [Admin Serv]  |
++---------------------------------------------+-------------------------------------------+
+                                              |
+                                     pg Pool (SSL Ready)
+                                              |
+                                              v
++-----------------------------------------------------------------------------------------+
+|                                   PostgreSQL Database                                   |
+|                                                                                         |
+|  • users                  • courses                     • course_enrollments            |
+|  • groups (leader_id)     • group_members               • assignments (course_id, type) |
+|  • assignment_targets     • submission_confirmations (confirmed_by_leader_id)           |
++-----------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 6. Local Development Setup
+## 5. Database Schema & ER Diagram
+
+```mermaid
+erDiagram
+    users ||--o{ courses : "teaches (as professor)"
+    users ||--o{ course_enrollments : "enrolls in"
+    courses ||--o{ course_enrollments : "has enrolled students"
+    courses ||--o{ assignments : "contains"
+    users ||--o{ groups : "creates"
+    users ||--o{ groups : "leads (as leader_id)"
+    groups ||--o{ group_members : "contains"
+    users ||--o{ group_members : "belongs to (single group)"
+    users ||--o{ assignments : "creates (as admin)"
+    assignments ||--o{ assignment_targets : "targets"
+    groups ||--o{ assignment_targets : "targeted by"
+    assignments ||--o{ submission_confirmations : "receives"
+    users ||--o{ submission_confirmations : "confirms (student_id)"
+    users ||--o{ submission_confirmations : "leader who confirmed (confirmed_by_leader_id)"
+
+    users {
+        int id PK
+        string name
+        string email UK
+        string password_hash
+        string role "student | admin"
+        timestamp created_at
+    }
+
+    courses {
+        int id PK
+        string title
+        text description
+        int professor_id FK
+        timestamp created_at
+    }
+
+    course_enrollments {
+        int course_id PK, FK
+        int student_id PK, FK
+        timestamp enrolled_at
+    }
+
+    groups {
+        int id PK
+        string name
+        int created_by FK
+        int leader_id FK
+        timestamp created_at
+    }
+
+    group_members {
+        int group_id PK, FK
+        int student_id PK, FK, UK
+        timestamp joined_at
+    }
+
+    assignments {
+        int id PK
+        string title
+        text description
+        timestamp due_date
+        string onedrive_link
+        int created_by FK
+        int course_id FK
+        string submission_type "INDIVIDUAL | GROUP"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    assignment_targets {
+        int id PK
+        int assignment_id FK
+        string target_type "ALL_STUDENTS | GROUP"
+        int group_id FK
+    }
+
+    submission_confirmations {
+        int id PK
+        int assignment_id FK
+        int student_id FK
+        timestamp step1_selected_at
+        timestamp confirmed_at
+        string status "confirmed"
+        int confirmed_by_leader_id FK
+    }
+```
+
+---
+
+## 6. Round 2 Core Workflows
+
+### Course Layer & Student Enrollment
+1. Seed data assigns professor `admin@joineazy.demo` to 3 courses (`CS301`, `CS302`, `CS303`).
+2. Students are enrolled into courses via `course_enrollments`.
+3. Student API `GET /api/courses/my-courses` returns only courses the student is enrolled in.
+4. Direct access to assignment details or course assignments checks enrollment (`403 Forbidden` if unenrolled).
+
+### Individual vs Group Submission Logic
+- **Individual (`submission_type = INDIVIDUAL`)**:
+  - Each student independently completes Step 1 ("Yes, I have submitted externally") and Step 2 ("Confirm").
+  - Affects strictly the calling student's confirmation record (`confirmed_by_leader_id = NULL`).
+- **Group (`submission_type = GROUP`)**:
+  - **Leader Authorization**: Backend verifies `group.leader_id === req.user.id`. If a non-leader attempts Step 1 or Step 2, the backend rejects with `403 Forbidden`.
+  - **Transactional Fan-Out**: On final confirmation, the server executes a PostgreSQL transaction inserting confirmation records for **all current group members**, tagging `confirmed_by_leader_id = leaderId`.
+  - All group members' interfaces immediately reflect as `Submitted` with live 100% team progress.
+
+### Server-Side Status Filtering
+The professor student monitoring API endpoint accepts a `?status=` query parameter:
+- `GET /api/admin/assignments/:id/students?status=SUBMITTED`: Filters `WHERE sc.id IS NOT NULL` in SQL.
+- `GET /api/admin/assignments/:id/students?status=PENDING`: Filters `WHERE sc.id IS NULL` in SQL.
+- `GET /api/admin/assignments/:id/students?status=ALL`: Returns full cohort.
+
+---
+
+## 7. API Specification
+
+### Courses Endpoints
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/courses/my-courses` | Student | Returns list of courses student is enrolled in with assignment counts. |
+| `GET` | `/api/courses/teaching` | Admin | Returns courses taught with student count, submitted/pending count, and completion rate. |
+| `GET` | `/api/courses/:id/assignments` | Student / Admin | Returns assignments within course (enforces enrollment authorization). |
+| `GET` | `/api/courses` | Admin | Returns all courses for dropdown form inputs. |
+
+### Assignment Endpoints (Updated)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/assignments` | Admin | Creates assignment with `courseId` and `submissionType` (`INDIVIDUAL` or `GROUP`). |
+| `PUT` | `/api/assignments/:id` | Admin | Updates assignment fields including course and submission type. |
+| `GET` | `/api/assignments` | Authenticated | Lists assignments applicable to user (with course title & submission type). |
+| `GET` | `/api/assignments/:id` | Authenticated | Detailed assignment information with access check. |
+
+### Submission Endpoints (Leader Enforced)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/assignments/:id/submission/step1` | Student | Records Step 1 intent. For `GROUP`, rejects non-leaders with 403. |
+| `POST` | `/api/assignments/:id/submission/confirm` | Student | Confirms submission. For `GROUP`, fan-outs confirmation across all members. |
+| `GET` | `/api/assignments/:id/submission` | Student | Returns personal/group submission status and leader details. |
+
+### Admin Monitoring Endpoints (Status Filtered)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/admin/assignments/:id/students?status=...` | Admin | Student roster filtered server-side (`SUBMITTED`, `PENDING`, `ALL`). |
+| `GET` | `/api/admin/assignments/:id/groups` | Admin | Group monitoring with leader names and team member statuses. |
+| `GET` | `/api/admin/dashboard/summary` | Admin | Summary KPIs including total courses and recent submission activity. |
+
+---
+
+## 8. Demo Credentials
+
+| Role | Name | Email | Password | Group & Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin / Professor** | Prof. Sarah Jenkins | `admin@joineazy.demo` | `Admin@123` | Instructor (All Courses) |
+| **Student (Leader)** | Aarav Sharma | `student1@demo.com` | `Student@123` | **Team Alpha (Leader)** |
+| **Student (Member)** | Bhavya Patel | `student2@demo.com` | `Student@123` | Team Alpha (Member) |
+| **Student (Member)** | Chetan Kumar | `student3@demo.com` | `Student@123` | Team Alpha (Member) |
+| **Student (Leader)** | Diya Rao | `student4@demo.com` | `Student@123` | **Team Beta (Leader)** |
+| **Student (Member)** | Eshan Verma | `student5@demo.com` | `Student@123` | Team Beta (Member) |
+
+---
+
+## 9. Local Development & Setup
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- PostgreSQL (v14 or higher) running locally on port 5432
+- Node.js v18+
+- PostgreSQL v14+ running locally on port `5432`
 
-### 1. Clone & Environment Configuration
+### 1. Clone & Configure Environment
 ```bash
 git clone https://github.com/Tvaibhav06/JoinEz.git
 cd JoinEz
-cp .env.example .env
 ```
-Ensure `.env` contains your PostgreSQL credentials (e.g., `postgresql://postgres:postgres123@localhost:5432/joineazy_db`).
 
-### 2. Database Initialization & Seeding
+Create root `.env` (or copy `.env.example`):
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/joineazy_db
+JWT_SECRET=joineazy_round2_secret_jwt_key_2026
+JWT_EXPIRES_IN=7d
+CLIENT_URL=http://localhost:5173
+
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 2. Database Migration & Seeding
 ```bash
-# Create database in PostgreSQL (if not already created)
-psql -U postgres -c "CREATE DATABASE joineazy_db;"
-
-# Install backend dependencies & run migrations + seed
 cd backend
 npm install
 npm run db:migrate
 npm run db:seed
 ```
 
-### 3. Start Backend Server
+### 3. Start Development Servers
+In terminal 1 (Backend):
 ```bash
 cd backend
-npm start
-# Server starts on http://localhost:5000
+npm run dev
+# Running on http://localhost:5000
 ```
 
-### 4. Start Frontend Client
-In a new terminal window:
+In terminal 2 (Frontend):
 ```bash
 cd frontend
 npm install
 npm run dev
-# Frontend runs on http://localhost:5173
+# Running on http://localhost:5173
 ```
-
-Open `http://localhost:5173` in your browser.
 
 ---
 
-## 7. Docker Setup
+## 10. Docker Setup
 
-The entire application (PostgreSQL, Express Backend, and React Frontend via Nginx) can be started with a single Docker Compose command:
+Run the entire application stack (PostgreSQL, Node backend, Nginx frontend) via Docker Compose:
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
-
-### What Happens Automatically:
-1. `postgres` container starts on port `5432` with healthcheck verification.
-2. `backend` container starts on port `5000`, waits for PostgreSQL to become healthy, and executes schema migrations & demo seeds automatically.
-3. `frontend` container builds production React assets and serves them via Nginx on port `5173`.
-
-Access the application:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000/api`
-
-To stop the containers:
-```bash
-docker compose down -v
-```
+- Healthcheck: `http://localhost:5000/api/health`
 
 ---
 
-## 8. Environment Variables
+## 11. Automated Testing
 
-| Variable | Default Value | Purpose |
-| :--- | :--- | :--- |
-| `PORT` | `5000` | Backend HTTP port |
-| `NODE_ENV` | `development` / `production` | Node environment |
-| `DATABASE_URL` | `postgresql://postgres:postgres123@localhost:5432/joineazy_db` | PostgreSQL connection string |
-| `JWT_SECRET` | `joineazy_super_secret_jwt_key_2026_change_in_production` | Secret key for signing JWTs |
-| `JWT_EXPIRES_IN` | `7d` | Token validity duration |
-| `CLIENT_URL` | `http://localhost:5173` | Allowed CORS origin |
-| `VITE_API_URL` | `http://localhost:5000/api` | API Base URL for frontend client |
+The repository contains end-to-end automated tests covering:
+- Authentication & JWT RBAC
+- Course enrollment & access control (enrolled vs unenrolled 403)
+- Assignment types (`INDIVIDUAL` vs `GROUP`)
+- Group leader authorization (non-leader 403 rejection)
+- Transactional fan-out confirmation across all group members
+- Server-side status filtering (`SUBMITTED` vs `PENDING`)
+- Database migration integrity & Task 1 regressions
 
----
-
-## 9. Database Schema & ER Diagram
-
-```mermaid
-erDiagram
-    USERS ||--o{ GROUPS : "creates (student)"
-    USERS ||--o{ GROUP_MEMBERS : "belongs to (student)"
-    GROUPS ||--|{ GROUP_MEMBERS : "contains"
-    USERS ||--o{ ASSIGNMENTS : "posts (admin)"
-    ASSIGNMENTS ||--|{ ASSIGNMENT_TARGETS : "targets"
-    GROUPS ||--o{ ASSIGNMENT_TARGETS : "received by"
-    USERS ||--o{ SUBMISSION_CONFIRMATIONS : "confirms (student)"
-    ASSIGNMENTS ||--o{ SUBMISSION_CONFIRMATIONS : "tracked by"
-```
-
-For the comprehensive data dictionary, refer to [`docs/er-diagram.md`](file:///d:/codes/assignmw/docs/er-diagram.md).
-
----
-
-## 10. API Documentation
-
-All endpoints other than registration and login require an `Authorization: Bearer <token>` header.
-
-| Method | Endpoint | Role | Purpose |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Public | Register new student account |
-| `POST` | `/api/auth/login` | Public | Authenticate student or admin; receive JWT |
-| `GET` | `/api/auth/me` | Authenticated | Retrieve current user profile |
-| `POST` | `/api/groups` | Student | Create new group (creator becomes initial member) |
-| `GET` | `/api/groups/my-group` | Student | View current student's active group and members |
-| `GET` | `/api/groups/:id` | Member / Admin | View group details and member roster |
-| `POST` | `/api/groups/:id/members` | Student (Member) | Add member by student email or student ID |
-| `GET` | `/api/groups/:id/progress` | Member / Admin | View dynamic group progress across assignments |
-| `POST` | `/api/assignments` | Admin | Create assignment with title, description, due date, OneDrive URL, targets |
-| `PUT` | `/api/assignments/:id` | Admin | Edit assignment details and targeting |
-| `GET` | `/api/assignments` | Student / Admin | List assignments (Admin: all; Student: applicable) |
-| `GET` | `/api/assignments/:id` | Student / Admin | View single assignment details with visibility check |
-| `POST` | `/api/assignments/:id/submission/step1` | Student | Record Step 1 intent ("Yes, I have submitted") |
-| `POST` | `/api/assignments/:id/submission/confirm`| Student | Record final confirmation (Step 2) |
-| `GET` | `/api/assignments/:id/submission` | Student | Retrieve own confirmation status |
-| `GET` | `/api/admin/assignments/:id/groups` | Admin | Group-wise submission tracking breakdown |
-| `GET` | `/api/admin/assignments/:id/students` | Admin | Student-wise submission tracking roster |
-| `GET` | `/api/admin/analytics/completion` | Admin | Submission completion statistics and breakdown |
-| `GET` | `/api/admin/analytics/group-performance` | Admin | Group performance calculation and rankings |
-| `GET` | `/api/admin/dashboard/summary` | Admin | Dashboard summary counts and recent submissions |
-
----
-
-## 11. Route Security Matrix
-
-| Capability | Public | Student | Admin | Backend Enforcement |
-| :--- | :---: | :---: | :---: | :--- |
-| Register Student Account | ✓ | ✓ | — | Role hardcoded to `student` |
-| Login & Token Issuance | ✓ | ✓ | ✓ | Role returned in JWT payload |
-| Create Group | — | ✓ | — | Rejects non-students; enforces 1-group limit |
-| Add Member to Group | — | ✓ | — | Verifies caller is group member |
-| View Student Group | — | ✓ | ✓ | Students restricted to own group |
-| View Group Progress | — | ✓ | ✓ | Students restricted to own group |
-| Create / Edit Assignment | — | — | ✓ | Rejects non-admins (403) |
-| View Assignments List | — | ✓ | ✓ | Student view filtered server-side |
-| Access Restricted Assignment | — | Target Only | ✓ | Non-targeted students blocked (403) |
-| Submit Confirmation | — | ✓ | — | Only student can confirm for self |
-| Admin Monitoring & Analytics | — | — | ✓ | Protected by `requireRole('admin')` |
-
----
-
-## 12. Implementation Decisions for PRD Ambiguities
-
-Per prompt Section 3, the following design decisions were adopted and enforced throughout the system:
-
-1. **Admin Provisioning**:
-   - There is no public admin registration form to prevent unauthorized privilege escalation.
-   - Admin accounts are provisioned via database seed data (`admin@joineazy.demo` / `Admin@123`).
-2. **Student Identification**:
-   - The database-generated integer `users.id` serves as the Student ID.
-   - Member additions support lookup by either **email** or **numeric Student ID**.
-3. **Single Active Group per Student**:
-   - A student may belong to only **one active group at a time**.
-   - Enforced at the database level with a `UNIQUE(student_id)` constraint on `group_members`, and validated with descriptive error responses in the service layer.
-4. **Immediate Member Addition**:
-   - "Invite/add members" is implemented as immediate addition rather than an email acceptance workflow.
-5. **Group Authorization**:
-   - Only students who are existing members of a group may add members to that group. Enforced strictly server-side.
-6. **Group Size**:
-   - No maximum group size is enforced.
-7. **Dynamic Progress Calculation**:
-   - Group progress is never stored as a stale column; it is calculated dynamically from current members and confirmations:
-     $$\text{Progress \%} = \left(\frac{\text{Confirmed Group Members}}{\text{Total Current Group Members}}\right) \times 100$$
-   - Displays "Complete" badge when confirmed members equal total members.
-8. **Group Performance Analytics Formula**:
-   - Calculated as:
-     $$\text{Group Performance \%} = \left(\frac{\text{Confirmed Confirmations}}{\text{Expected Confirmations}}\right) \times 100$$
-     where $\text{Expected} = \text{Group Members} \times \text{Applicable Assignments}$.
-9. **Submission Confirmation Uniqueness**:
-   - Enforced via a PostgreSQL unique constraint: `UNIQUE(assignment_id, student_id)`.
-   - Once confirmed, the student cannot confirm again (action is disabled and idempotent).
-10. **Assignment Targeting Model**:
-    - Each assignment selects either `ALL_STUDENTS` or `GROUP` (with one or more group IDs).
-11. **External OneDrive Submission Model**:
-    - The application stores and exposes OneDrive URLs. Actual file storage and uploading occur outside the application; the application records and tracks verified in-app confirmations.
-
----
-
-## 13. Demo Credentials
-
-The seeded database contains ready-to-test accounts with pre-populated groups and submission confirmations.
-
-### Admin (Professor)
-- **Email**: `admin@joineazy.demo`
-- **Password**: `Admin@123`
-- **Role**: Professor / Admin
-
-### Students
-| Name | Email | Password | Group | Seeded Submissions |
-| :--- | :--- | :--- | :--- | :--- |
-| **Aarav Sharma** | `student1@demo.com` | `Student@123` | Team Alpha (Creator) | DBMS (Confirmed), OS (Confirmed) |
-| **Bhavya Patel** | `student2@demo.com` | `Student@123` | Team Alpha (Member) | DBMS (Confirmed), OS (Pending) |
-| **Chetan Kumar** | `student3@demo.com` | `Student@123` | Team Alpha (Member) | DBMS (Pending), OS (Pending) |
-| **Diya Rao** | `student4@demo.com` | `Student@123` | Team Beta (Creator) | DBMS (Confirmed), Networks (Confirmed) |
-| **Eshan Verma** | `student5@demo.com` | `Student@123` | Team Beta (Member) | DBMS (Pending), Networks (Confirmed) |
-
-*Tip: The login page includes 1-click demo credential fill buttons for instant evaluation.*
-
----
-
-## 14. Demo Walkthrough
-
-### Scenario A: Student Workflow
-1. Navigate to `http://localhost:5173/login`.
-2. Click **"Aarav (Student, Alpha)"** or login with `student1@demo.com` / `Student@123`.
-3. **Dashboard**: Observe active group "Team Alpha", member roster, applicable assignments, and overall team progress bar.
-4. **My Group**: View team members. Try adding a member using email or student ID (e.g. ID `5` will show that Eshan already belongs to Team Beta).
-5. **Assignments**:
-   - View Assignment 1 (DBMS - All Students) and Assignment 2 (OS - Team Alpha). Notice Assignment 3 (Networks - Team Beta) is not visible.
-   - Click **"Open OneDrive Link"** (opens in a new tab).
-   - Click **"Yes, I have submitted"** -> Step 1 dialog opens -> Proceed -> Step 2 final verification -> Click **"Confirm Submission"**.
-   - Confirmation status immediately updates to "Submitted" and group progress updates live.
-
-### Scenario B: Admin Workflow
-1. Log in with `admin@joineazy.demo` / `Admin@123`.
-2. **Dashboard**: View summary KPI cards (Students, Groups, Assignments, Overall Completion) and recent submissions feed.
-3. **Assignments**:
-   - Click **"Create Assignment"**. Enter Title, Description, Due Date, OneDrive URL, choose **"Specific Groups"**, and select "Team Alpha".
-   - Submit and verify the assignment is persisted.
-   - Click **"Edit"** on an existing assignment to modify the title or deadline.
-4. **Monitoring**:
-   - Select an assignment from the dropdown.
-   - **Group-Wise**: Inspect group completion progress bars and member status breakdown.
-   - **Student-Wise**: View student submission table with search filter.
-5. **Analytics**:
-   - Inspect the **Submission Completion** cards and per-assignment progress bars.
-   - Review **Group Performance Ranking** table calculated with the PRD formula.
-
----
-
-## 15. Automated Testing
-
-The backend includes a comprehensive Jest and Supertest suite verifying all functional, security, and edge-case requirements:
-
+Run tests:
 ```bash
 cd backend
 npm test
 ```
 
-### Verified Test Suites:
-- `auth.test.js`: Student registration, duplicate email rejection, student login, admin login, invalid password handling, JWT verification, and RBAC rejection.
-- `groups_and_assignments.test.js`:
-  - Group creation, creator auto-membership, and 1-group-per-student limit.
-  - Adding members by email and ID, rejection of non-existent students, and rejection of students already in another group.
-  - Non-member authorization checks.
-  - Admin assignment creation with targeting, applicable student visibility, and blocking non-targeted students.
-  - Two-step submission confirmation workflow (Step 1 intent, Step 2 final, duplicate prevention).
-  - Dynamic progress calculation and Admin analytics formulas.
+**Results:**
+```text
+Test Suites: 3 passed, 3 total
+Tests:       41 passed, 41 total
+Snapshots:   0 total
+Time:        6.289 s
+```
 
 ---
 
-## 16. Scope & Limitations
+## 12. Deployment Guide
 
-Per the PRD specification:
-- **External Submission**: Assignment files are uploaded by students directly to OneDrive. The application stores the link and records verified confirmations; it does not host or process file binaries.
-- **Single Active Group**: A student may belong to only one group at a time.
-- **Admin Accounts**: Created exclusively via database seed data.
-- **Out of Scope**: In-app file uploads, chat, email delivery services, grading, and payment processing are intentionally omitted per the PRD specification.
+The repository includes pre-configured deployment specifications for **Render**, **Vercel**, and **Netlify**:
+
+### Option A: Render 1-Click Blueprint (`render.yaml`)
+1. Push repository to GitHub.
+2. In [Render Dashboard](https://dashboard.render.com), click **New +** -> **Blueprint**.
+3. Select this repository. Render will automatically provision:
+   - Managed PostgreSQL database
+   - Node/Express Web Service (`/backend`)
+   - Vite React Static Site (`/frontend` with rewrite rules)
+
+### Option B: Frontend on Vercel or Netlify
+- **Vercel**: Configuration file [`frontend/vercel.json`](file:///d:/codes/assignmw/frontend/vercel.json) handles SPA rewrites.
+- **Netlify**: Configuration file [`netlify.toml`](file:///d:/codes/assignmw/netlify.toml) specifies publish directory `dist` and redirect rule `/* /index.html 200`.
+- Set Environment Variable: `VITE_API_URL = https://your-backend-url.onrender.com/api`
+
+---
+
+## 13. Verification Report
+
+| Area | Status | Evidence |
+| :--- | :---: | :--- |
+| **Auth UX** | **PASS** | Inline regex validation, loading spinner states, demo accounts, role-based redirect. |
+| **Courses** | **PASS** | `courses` & `course_enrollments` tables; `GET /api/courses/my-courses` and `teaching`. |
+| **Student Dashboard** | **PASS** | Responsive Enrolled Course cards navigating to `/student/courses/:courseId/assignments`. |
+| **Professor Dashboard** | **PASS** | Courses Taught with live PostgreSQL analytics (student count, submitted/pending counts). |
+| **Assignment Types** | **PASS** | Explicit `INDIVIDUAL` and `GROUP` types; form selector & badges. |
+| **Leader-Only Acknowledgment** | **PASS** | Non-leader rejected with 403; leader confirmation transactionally fans out to all members. |
+| **Individual Submissions** | **PASS** | Preserves Task 1 isolation; confirming affects only the caller. |
+| **Status Filtering** | **PASS** | Server-side query parameter `?status=SUBMITTED` & `PENDING` directly in SQL. |
+| **Database Migration** | **PASS** | `002_round2_courses_and_groups.sql` runs cleanly; backfills legacy records. |
+| **Tests** | **PASS** | 41/41 tests passing in Jest/Supertest suite with 0 failures. |
+| **Docker** | **Config Valid** | Multi-stage Dockerfile and docker-compose.yml verified; runtime pending local Docker daemon. |
+| **Deployment Configs** | **PASS** | `render.yaml`, `vercel.json`, `netlify.toml` configured for SPA routing. |
+| **README Documentation** | **PASS** | Comprehensive documentation, ER diagram, and verification matrix provided. |
+
+---
+
+## 14. Known Limitations
+
+1. **Course Self-Enrollment**: In alignment with the PRD specification (which explicitly designated self-enrollment as out-of-scope for Round 2), courses and student enrollments are managed through seed data and administrative assignment.
+2. **OneDrive File Verification**: Per specification, the system records student submission acknowledgment; external file inspection on OneDrive is external to the application scope.

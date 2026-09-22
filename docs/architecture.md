@@ -1,8 +1,7 @@
 # Architecture Documentation
+## Joineazy Student, Group, Course & Assignment Management System (Round 2)
 
-## Joineazy Student, Group & Assignment Management System
-
-This document outlines the software architecture, design patterns, security model, and data flow of the Joineazy system.
+This document outlines the software architecture, design patterns, security model, and data flow of the Joineazy system, updated to incorporate **Round 2 Course Hierarchies, Group Leadership Authorization, Transactional Fan-Out, and Server-Side Status Filtering**.
 
 ---
 
@@ -13,7 +12,7 @@ The application follows a decoupled client-server architecture:
 ```text
 ┌────────────────────────────────────────────────────────┐
 │                   React.js SPA Client                  │
-│       Vite • Tailwind CSS • Context API • SPA Router   │
+│  Vite • Tailwind CSS • Lucide UI • Context API • Router│
 └───────────────────────────┬────────────────────────────┘
                             │ HTTP / REST (JSON)
                             │ Authorization: Bearer <JWT>
@@ -26,10 +25,11 @@ The application follows a decoupled client-server architecture:
 │  └────────────────────────┬─────────────────────────┘  │
 └───────────────────────────┼────────────────────────────┘
                             │ Parameterized SQL Queries
-                            │ (PostgreSQL Connection Pool)
+                            │ (pg Connection Pool with SSL)
 ┌───────────────────────────▼────────────────────────────┐
 │                  PostgreSQL Database                   │
-│   Users • Groups • Assignments • Targets • Submissions │
+│   Users • Courses • Enrollments • Groups • Members     │
+│   Assignments • Targets • Submission Confirmations     │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -43,16 +43,16 @@ To ensure testability, modularity, and clean separation of concerns, the backend
 HTTP Request
      │
      ▼
-[ Routes Layer ]          Defines URI endpoints, HTTP verbs, and mounts handlers
+[ Routes Layer ]          Mounts endpoints under /api/* (Auth, Courses, Groups, Assignments, Admin)
      │
      ▼
-[ Middleware Layer ]      JWT authentication, role-based authorization, and schema validation
+[ Middleware Layer ]      JWT verification, role authorization (requireRole), error handling
      │
      ▼
-[ Controller Layer ]      Extracts request inputs, calls services, formats standardized JSON
+[ Controller Layer ]      Extracts parameters & query filters, invokes services, formats standardized JSON
      │
      ▼
-[ Service Layer ]         Encapsulates business rules, calculations, and transaction orchestration
+[ Service Layer ]         Encapsulates domain logic (leader check, enrollment check, transaction fan-out)
      │
      ▼
 [ Database Layer ]        pg Connection Pool executing parameterized queries against PostgreSQL
@@ -62,14 +62,23 @@ HTTP Response             { success: true, message: "...", data: { ... } }
 ```
 
 ### Key Responsibilities by Layer:
-1. **Routes (`src/routes/`)**: Mounts endpoints under `/api/...`. Never contains database queries.
+1. **Routes (`src/routes/`)**:
+   - `authRoutes.js`: Login, student registration, profile.
+   - `courseRoutes.js`: Course listing, student enrolled courses, professor taught courses, course assignments.
+   - `groupRoutes.js`: Group creation, team membership, leader resolution.
+   - `assignmentRoutes.js`: Assignment CRUD with course and submission type.
+   - `submissionRoutes.js`: Step 1 intent and Step 2 confirmation with leader gating.
+   - `adminRoutes.js`: Monitoring with server-side status filtering and completion analytics.
 2. **Middleware (`src/middleware/`)**:
-   - `authenticateJWT`: Validates token signature, expiration, and ensures user still exists in DB.
+   - `authenticateJWT`: Validates token signature, expiration, and ensures user still exists.
    - `requireRole`: Enforces role boundaries (`student` vs `admin`).
-   - `errorHandler`: Traps all uncaught exceptions, transforms PostgreSQL error codes (e.g. `23505` unique violation) into clean HTTP JSON responses.
-3. **Controllers (`src/controllers/`)**: Translates HTTP parameters into typed method arguments and delegates to the appropriate service.
-4. **Services (`src/services/`)**: Contains all core domain logic, membership validation, targeting filters, and statistical calculations.
-5. **Database (`src/config/db.js`)**: Manages pooling, client acquisition, and transactional rollbacks.
+   - `errorHandler`: Traps exceptions, translates PostgreSQL error codes (e.g. `23505` unique violation) into clean HTTP JSON responses.
+3. **Controllers (`src/controllers/`)**: Translates HTTP parameters and query strings into typed arguments and delegates to services.
+4. **Services (`src/services/`)**: Contains core domain logic:
+   - `courseService.js`: Scopes courses by student enrollment and professor ownership.
+   - `submissionService.js`: Enforces group leader checks and executes transactional confirmation fan-out.
+   - `adminService.js`: Dynamic SQL filtering on `?status=SUBMITTED` (`sc.id IS NOT NULL`) vs `?status=PENDING` (`sc.id IS NULL`).
+5. **Database (`src/config/db.js`)**: Manages pooling, client acquisition, production SSL, and transaction rollbacks.
 
 ---
 
@@ -77,18 +86,7 @@ HTTP Response             { success: true, message: "...", data: { ... } }
 
 ### 3.1 Authentication
 - Passwords are encrypted using `bcryptjs` with a cost factor of 10. Plain-text passwords never touch logs or database records.
-- Login generates a signed JSON Web Token (JWT) with HS256 encryption containing:
-  ```json
-  {
-    "sub": 1,
-    "id": 1,
-    "email": "student1@demo.com",
-    "role": "student",
-    "name": "Aarav Sharma",
-    "iat": 1758067200,
-    "exp": 1758672000
-  }
-  ```
+- Login generates a signed JSON Web Token (JWT) with HS256 encryption.
 - Public student registration forces the `role` to `'student'` server-side, preventing privilege escalation.
 - Admin accounts cannot be created publicly; they are provisioned exclusively via database seed configurations.
 
@@ -99,48 +97,54 @@ HTTP Response             { success: true, message: "...", data: { ... } }
 | `/api/auth/register` | POST | Public | Enforces student role assignment |
 | `/api/auth/login` | POST | Public | Validates credentials & issues JWT |
 | `/api/auth/me` | GET | Authenticated | Returns current profile |
+| `/api/courses/my-courses` | GET | Student | Returns only courses caller is enrolled in |
+| `/api/courses/teaching` | GET | Admin | Returns courses taught with live stats |
+| `/api/courses/:id/assignments` | GET | Authenticated | Enforces course enrollment if student |
 | `/api/groups` | POST | Student | Rejects admin callers; enforces 1-group limit |
-| `/api/groups/my-group`| GET | Student | Returns active group |
-| `/api/groups/:id` | GET | Member / Admin | Verifies caller belongs to group if student |
-| `/api/groups/:id/members` | POST | Student (Member) | Verifies caller is group member |
-| `/api/groups/:id/progress`| GET | Member / Admin | Verifies caller belongs to group if student |
-| `/api/assignments` | POST | Admin | Rejects non-admin callers |
-| `/api/assignments/:id` | PUT | Admin | Rejects non-admin callers |
-| `/api/assignments` | GET | Authenticated | Admin sees all; Student filtered to applicable |
-| `/api/assignments/:id` | GET | Authenticated | Verifies student group targeting access |
-| `/api/assignments/:id/submission/step1` | POST | Student | Verifies student assignment visibility |
-| `/api/assignments/:id/submission/confirm` | POST | Student | Enforces uniqueness & visibility |
-| `/api/admin/*` | GET | Admin | All sub-routes require Admin role |
+| `/api/groups/my-group` | GET | Student | Returns active group with leader details |
+| `/api/groups/:id/members` | POST | Student (Member) | Verifies caller is existing group member |
+| `/api/assignments` | POST | Admin | Rejects non-admin; validates `submission_type` |
+| `/api/assignments/:id` | PUT | Admin | Rejects non-admin |
+| `/api/assignments` | GET | Authenticated | Filtered to student enrolled courses |
+| `/api/assignments/:id/submission/step1` | POST | Student | For GROUP: Rejects non-leaders with 403 |
+| `/api/assignments/:id/submission/confirm` | POST | Student | For GROUP: Rejects non-leaders with 403; fans out across team |
+| `/api/admin/assignments/:id/students` | GET | Admin | Supports `?status=SUBMITTED` / `PENDING` in SQL |
+| `/api/admin/dashboard/summary` | GET | Admin | Faculty summary KPIs |
 
 ---
 
 ## 4. Transaction Boundaries & Data Integrity
 
-Critical multi-step operations are wrapped in PostgreSQL transactions with automatic `ROLLBACK` upon error:
-
 ### 4.1 Group Creation Transaction
 ```sql
 BEGIN;
-INSERT INTO groups (name, created_by) VALUES ($1, $2) RETURNING id;
+INSERT INTO groups (name, created_by, leader_id) VALUES ($1, $2, $2) RETURNING id;
 INSERT INTO group_members (group_id, student_id) VALUES (group_id, $2);
 COMMIT;
 ```
 
-### 4.2 Assignment Creation Transaction
+### 4.2 Group Submission Confirmation (Transactional Fan-Out)
+When a designated group leader confirms submission for a `GROUP` assignment, the server runs an atomic transaction that inserts confirmation records for all current members of that team:
 ```sql
 BEGIN;
-INSERT INTO assignments (title, description, due_date, onedrive_link, created_by) VALUES (...) RETURNING id;
--- Loop over target groups or insert ALL_STUDENTS
-INSERT INTO assignment_targets (assignment_id, target_type, group_id) VALUES (...);
+-- Verify student is leader: group.leader_id === req.user.id
+-- Verify no prior group confirmation exists
+FOR member_id IN SELECT student_id FROM group_members WHERE group_id = $group_id LOOP
+  INSERT INTO submission_confirmations (
+    assignment_id, student_id, step1_selected_at, confirmed_at, status, confirmed_by_leader_id
+  ) VALUES ($assign_id, member_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'confirmed', $leader_id)
+  ON CONFLICT (assignment_id, student_id) DO UPDATE
+    SET confirmed_by_leader_id = $leader_id, confirmed_at = CURRENT_TIMESTAMP;
+END LOOP;
 COMMIT;
 ```
 
-### 4.3 Final Submission Confirmation Transaction
+### 4.3 Individual Submission Confirmation
 ```sql
 BEGIN;
--- Verify no prior confirmation exists
-SELECT id FROM submission_confirmations WHERE assignment_id = $1 AND student_id = $2;
-INSERT INTO submission_confirmations (assignment_id, student_id, step1_selected_at, confirmed_at, status) VALUES (...);
+INSERT INTO submission_confirmations (
+  assignment_id, student_id, step1_selected_at, confirmed_at, status, confirmed_by_leader_id
+) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'confirmed', NULL);
 COMMIT;
 ```
 
@@ -148,17 +152,13 @@ COMMIT;
 
 ## 5. Domain Business Logic & Formulas
 
-### 5.1 Group Assignment Progress
+### 5.1 Group Assignment Live Progress
 Progress is dynamically derived from database records and never stored as a stale static column:
 $$\text{Progress \%} = \left(\frac{\text{Confirmed Group Members}}{\text{Total Current Group Members}}\right) \times 100$$
 - When $\text{Confirmed Group Members} = \text{Total Current Group Members}$, the status is flagged as **Complete (100%)**.
 
-### 5.2 Group Performance Analytics
-Measures aggregate submission efficiency across all assignments applicable to that group:
-$$\text{Group Performance \%} = \left(\frac{\text{Total Confirmed Member-Assignment Confirmations}}{\text{Total Expected Member-Assignment Confirmations}}\right) \times 100$$
-$$\text{Total Expected} = \text{Group Member Count} \times \text{Applicable Assignments Count}$$
-
-### 5.3 External OneDrive Architecture
-- The application stores and exposes external OneDrive URLs (`https://onedrive.live.com/...`).
-- Students perform file uploads outside the platform.
-- The two-step in-app confirmation records self-reported completion without hosting or processing raw file binaries.
+### 5.2 Server-Side Status Filtering
+To support large cohorts, filtering is executed directly in PostgreSQL rather than sending thousands of rows to the browser:
+- `?status=SUBMITTED`: Appends `AND sc.id IS NOT NULL`
+- `?status=PENDING`: Appends `AND sc.id IS NULL`
+- `?status=ALL`: Returns all enrolled students for the assignment target
