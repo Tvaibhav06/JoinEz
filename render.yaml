@@ -1,12 +1,14 @@
 # Render Blueprint Specification for JoinEz (Full Stack)
-services:
-  # 1. PostgreSQL Managed Database
-  - type: postgres
-    name: joineazy-postgres
+# Top-level managed PostgreSQL Database
+databases:
+  - name: joineazy-postgres
+    databaseName: joineazy_db
+    user: postgres
     plan: free
-    ipAllowList: [] # only allow internal services
 
-  # 2. Express Backend Web Service
+# Top-level Services (Backend & Frontend)
+services:
+  # 1. Express Backend Web Service
   - type: web
     name: joineazy-backend
     runtime: node
@@ -28,10 +30,10 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CLIENT_URL
-        value: "*" # update to frontend domain once deployed
+        value: "*" # Allow frontend requests
     healthCheckPath: /api/health
 
-  # 3. Vite React Frontend Static Site
+  # 2. Vite React Frontend Static Site
   - type: static
     name: joineazy-frontend
     rootDir: frontend
