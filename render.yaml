@@ -34,11 +34,12 @@ services:
     healthCheckPath: /api/health
 
   # 2. Vite React Frontend Static Site
-  - type: static
+  - type: web
     name: joineazy-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishDir: dist
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
         fromService:
