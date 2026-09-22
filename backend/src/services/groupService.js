@@ -23,11 +23,11 @@ async function createGroup({ name, studentId }) {
       throw err;
     }
 
-    // Create group
+    // Create group with student as both creator and default leader
     const groupRes = await client.query(`
-      INSERT INTO groups (name, created_by)
-      VALUES ($1, $2)
-      RETURNING id, name, created_by, created_at
+      INSERT INTO groups (name, created_by, leader_id)
+      VALUES ($1, $2, $2)
+      RETURNING id, name, created_by, leader_id, created_at
     `, [name.trim(), studentId]);
     const group = groupRes.rows[0];
 
@@ -41,15 +41,20 @@ async function createGroup({ name, studentId }) {
 
     // Return group with members
     const membersRes = await pool.query(`
-      SELECT u.id, u.name, u.email, gm.joined_at, (u.id = $2) AS is_creator
+      SELECT u.id, u.name, u.email, gm.joined_at,
+             (u.id = $2) AS is_creator,
+             (u.id = $3) AS is_leader
       FROM group_members gm
       JOIN users u ON gm.student_id = u.id
       WHERE gm.group_id = $1
       ORDER BY gm.joined_at ASC
-    `, [group.id, studentId]);
+    `, [group.id, group.created_by, group.leader_id]);
+
+    const leaderRes = await pool.query('SELECT name FROM users WHERE id = $1', [group.leader_id]);
 
     return {
       ...group,
+      leader_name: leaderRes.rows[0]?.name || null,
       members: membersRes.rows
     };
   } catch (err) {
@@ -62,10 +67,13 @@ async function createGroup({ name, studentId }) {
 
 async function getMyGroup(studentId) {
   const groupRes = await pool.query(`
-    SELECT g.id, g.name, g.created_by, g.created_at, u.name AS creator_name, u.email AS creator_email
+    SELECT g.id, g.name, g.created_by, g.leader_id, g.created_at,
+           u.name AS creator_name, u.email AS creator_email,
+           lu.name AS leader_name, lu.email AS leader_email
     FROM group_members gm
     JOIN groups g ON gm.group_id = g.id
     JOIN users u ON g.created_by = u.id
+    LEFT JOIN users lu ON g.leader_id = lu.id
     WHERE gm.student_id = $1
   `, [studentId]);
 
@@ -75,24 +83,30 @@ async function getMyGroup(studentId) {
 
   const group = groupRes.rows[0];
   const membersRes = await pool.query(`
-    SELECT u.id, u.name, u.email, gm.joined_at, (u.id = $2) AS is_creator
+    SELECT u.id, u.name, u.email, gm.joined_at,
+           (u.id = $2) AS is_creator,
+           (u.id = $3) AS is_leader
     FROM group_members gm
     JOIN users u ON gm.student_id = u.id
     WHERE gm.group_id = $1
     ORDER BY gm.joined_at ASC
-  `, [group.id, group.created_by]);
+  `, [group.id, group.created_by, group.leader_id]);
 
   return {
     ...group,
+    is_leader: group.leader_id === studentId,
     members: membersRes.rows
   };
 }
 
 async function getGroupById(groupId, user) {
   const groupRes = await pool.query(`
-    SELECT g.id, g.name, g.created_by, g.created_at, u.name AS creator_name, u.email AS creator_email
+    SELECT g.id, g.name, g.created_by, g.leader_id, g.created_at,
+           u.name AS creator_name, u.email AS creator_email,
+           lu.name AS leader_name, lu.email AS leader_email
     FROM groups g
     JOIN users u ON g.created_by = u.id
+    LEFT JOIN users lu ON g.leader_id = lu.id
     WHERE g.id = $1
   `, [groupId]);
 
@@ -118,15 +132,18 @@ async function getGroupById(groupId, user) {
   }
 
   const membersRes = await pool.query(`
-    SELECT u.id, u.name, u.email, gm.joined_at, (u.id = $2) AS is_creator
+    SELECT u.id, u.name, u.email, gm.joined_at,
+           (u.id = $2) AS is_creator,
+           (u.id = $3) AS is_leader
     FROM group_members gm
     JOIN users u ON gm.student_id = u.id
     WHERE gm.group_id = $1
     ORDER BY gm.joined_at ASC
-  `, [groupId, group.created_by]);
+  `, [groupId, group.created_by, group.leader_id]);
 
   return {
     ...group,
+    is_leader: user.role === 'student' ? group.leader_id === user.id : false,
     members: membersRes.rows
   };
 }
@@ -210,16 +227,19 @@ async function addMember(groupId, { emailOrId }, requestingUserId) {
   );
 
   // 7. Return updated members list
-  const groupRes = await pool.query('SELECT created_by FROM groups WHERE id = $1', [groupId]);
+  const groupRes = await pool.query('SELECT created_by, leader_id FROM groups WHERE id = $1', [groupId]);
   const creatorId = groupRes.rows[0].created_by;
+  const leaderId = groupRes.rows[0].leader_id;
 
   const membersRes = await pool.query(`
-    SELECT u.id, u.name, u.email, gm.joined_at, (u.id = $2) AS is_creator
+    SELECT u.id, u.name, u.email, gm.joined_at,
+           (u.id = $2) AS is_creator,
+           (u.id = $3) AS is_leader
     FROM group_members gm
     JOIN users u ON gm.student_id = u.id
     WHERE gm.group_id = $1
     ORDER BY gm.joined_at ASC
-  `, [groupId, creatorId]);
+  `, [groupId, creatorId, leaderId]);
 
   return {
     message: `Added ${targetStudent.name} to the group`,
@@ -251,8 +271,10 @@ async function getGroupProgress(groupId, user) {
   // Find all assignments targeted to ALL_STUDENTS or specifically to this group
   const assignmentsRes = await pool.query(`
     SELECT DISTINCT a.id, a.title, a.description, a.due_date, a.onedrive_link,
+           a.submission_type, a.course_id, c.title AS course_title,
       (SELECT target_type FROM assignment_targets WHERE assignment_id = a.id LIMIT 1) AS target_type
     FROM assignments a
+    LEFT JOIN courses c ON a.course_id = c.id
     JOIN assignment_targets at ON a.id = at.assignment_id
     WHERE at.target_type = 'ALL_STUDENTS' OR (at.target_type = 'GROUP' AND at.group_id = $1)
     ORDER BY a.due_date ASC
@@ -277,10 +299,12 @@ async function getGroupProgress(groupId, user) {
     // Check caller's own submission status if student
     let userSubmission = null;
     if (user.role === 'student') {
-      const subRes = await pool.query(
-        'SELECT confirmed_at, status FROM submission_confirmations WHERE assignment_id = $1 AND student_id = $2',
-        [assignment.id, user.id]
-      );
+      const subRes = await pool.query(`
+        SELECT sc.confirmed_at, sc.status, sc.confirmed_by_leader_id, lu.name AS leader_name
+        FROM submission_confirmations sc
+        LEFT JOIN users lu ON sc.confirmed_by_leader_id = lu.id
+        WHERE sc.assignment_id = $1 AND sc.student_id = $2
+      `, [assignment.id, user.id]);
       if (subRes.rows.length > 0) {
         userSubmission = subRes.rows[0];
       }
@@ -290,7 +314,8 @@ async function getGroupProgress(groupId, user) {
     const memberStatusesRes = await pool.query(`
       SELECT u.id, u.name, u.email,
         CASE WHEN sc.id IS NOT NULL THEN 'confirmed' ELSE 'pending' END AS status,
-        sc.confirmed_at
+        sc.confirmed_at,
+        sc.confirmed_by_leader_id
       FROM group_members gm
       JOIN users u ON gm.student_id = u.id
       LEFT JOIN submission_confirmations sc ON sc.assignment_id = $1 AND sc.student_id = u.id
@@ -305,6 +330,9 @@ async function getGroupProgress(groupId, user) {
         description: assignment.description,
         due_date: assignment.due_date,
         onedrive_link: assignment.onedrive_link,
+        submission_type: assignment.submission_type,
+        course_id: assignment.course_id,
+        course_title: assignment.course_title,
         target_type: assignment.target_type
       },
       group_id: groupId,

@@ -3,7 +3,7 @@ const { success } = require('../utils/response');
 
 async function createAssignment(req, res, next) {
   try {
-    const { title, description, dueDate, onedriveLink, targetType, groupIds } = req.body;
+    const { title, description, dueDate, onedriveLink, targetType, groupIds, courseId, submissionType } = req.body;
     const assignment = await assignmentService.createAssignment({
       title,
       description,
@@ -11,6 +11,8 @@ async function createAssignment(req, res, next) {
       onedriveLink,
       targetType,
       groupIds,
+      courseId,
+      submissionType,
       adminId: req.user.id
     });
     return success(res, assignment, 'Assignment created successfully', 201);
@@ -22,14 +24,16 @@ async function createAssignment(req, res, next) {
 async function updateAssignment(req, res, next) {
   try {
     const assignmentId = parseInt(req.params.id, 10);
-    const { title, description, dueDate, onedriveLink, targetType, groupIds } = req.body;
+    const { title, description, dueDate, onedriveLink, targetType, groupIds, courseId, submissionType } = req.body;
     const assignment = await assignmentService.updateAssignment(assignmentId, {
       title,
       description,
       dueDate,
       onedriveLink,
       targetType,
-      groupIds
+      groupIds,
+      courseId,
+      submissionType
     }, req.user.id);
     return success(res, assignment, 'Assignment updated successfully', 200);
   } catch (err) {

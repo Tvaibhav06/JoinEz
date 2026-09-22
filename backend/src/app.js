@@ -6,17 +6,23 @@ const { error, success } = require('./utils/response');
 
 const authRoutes = require('./routes/authRoutes');
 const groupRoutes = require('./routes/groupRoutes');
+const courseRoutes = require('./routes/courseRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const submissionRoutes = require('./routes/submissionRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: '*', // Allow all origins in dev / docker environments
+// Configure CORS origin based on environment
+const corsOptions = {
+  origin: env.CLIENT_URL && env.CLIENT_URL !== '*'
+    ? [env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:3000']
+    : '*',
   credentials: true
-}));
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -27,6 +33,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/assignments/:id/submission', submissionRoutes);
 app.use('/api/assignments', assignmentRoutes);

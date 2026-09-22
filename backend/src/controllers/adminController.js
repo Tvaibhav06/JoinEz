@@ -14,7 +14,8 @@ async function getAssignmentGroupMonitoring(req, res, next) {
 async function getAssignmentStudentMonitoring(req, res, next) {
   try {
     const assignmentId = parseInt(req.params.id, 10);
-    const data = await adminService.getAssignmentStudentMonitoring(assignmentId);
+    const statusFilter = req.query.status || null;
+    const data = await adminService.getAssignmentStudentMonitoring(assignmentId, statusFilter);
     return success(res, data, 'Student monitoring data', 200);
   } catch (err) {
     next(err);
